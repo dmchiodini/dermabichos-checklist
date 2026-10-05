@@ -15,6 +15,7 @@ export async function login(formData: FormData) {
   })
 
   if (error) {
+    console.error('[login]', error.status, error.code, error.message)
     return { success: false, message: 'E-mail ou senha incorretos' }
   }
 

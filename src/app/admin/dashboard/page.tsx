@@ -1,4 +1,6 @@
 import React from 'react'
+import Image from 'next/image'
+import { LogOut } from 'lucide-react'
 import { logout } from '@/app/actions/auth'
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase/server'
@@ -26,21 +28,32 @@ export default async function DashboardPage() {
     .order('nome')
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-8">
-      <div className="max-w-7xl mx-auto flex justify-between items-center bg-white p-6 rounded-lg shadow mb-8">
-        <h1 className="text-2xl font-bold text-gray-800">Painel Administrativo</h1>
-        <form action={logout}>
-          <Button variant="outline" type="submit">Sair (Logout)</Button>
-        </form>
-      </div>
+    <div className="min-h-screen bg-espuma">
+      <header className="border-b border-border bg-white">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 md:px-8">
+          <div className="flex items-center gap-3">
+            <Image src="/dermabichos-logo.svg" alt="" width={48} height={48} className="size-12 rounded-full ring-2 ring-accent" />
+            <div>
+              <p className="font-heading text-lg leading-tight font-bold">Dermabichos</p>
+              <p className="text-sm text-muted-foreground">Painel administrativo</p>
+            </div>
+          </div>
+          <form action={logout}>
+            <Button variant="ghost" type="submit" className="h-10 rounded-xl px-3 text-base font-semibold text-muted-foreground">
+              <LogOut className="size-4" aria-hidden />
+              Sair
+            </Button>
+          </form>
+        </div>
+      </header>
 
-      <div className="max-w-7xl mx-auto bg-white p-6 rounded-lg shadow">
-        <DashboardClient 
-          initialChecklists={checklists || []} 
+      <main className="mx-auto max-w-7xl px-4 py-8 md:px-8 md:py-10">
+        <DashboardClient
+          initialChecklists={checklists || []}
           initialFuncionarios={funcionarios || []}
           initialTiposHidratacao={tiposHidratacao || []}
         />
-      </div>
+      </main>
     </div>
   )
 }
