@@ -4,7 +4,7 @@ import React, { useState } from 'react'
 import Image from 'next/image'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Trash2, Check, ChevronsUpDown } from 'lucide-react'
+import { Trash2, Check, ChevronsUpDown, Camera } from 'lucide-react'
 import { checklistSchema, ChecklistFormValues } from '@/schemas/checklist.schema'
 import { SignaturePad } from '@/components/signature-pad'
 import { submitChecklist, getLookupData } from '@/app/actions/checklist'
@@ -18,7 +18,6 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
@@ -43,6 +42,67 @@ const catBreeds = [
   "Persa", "Ragdoll", "Sagrado da Birmânia", "Savannah", "Scottish Fold", "Siamês",
   "Siberiano", "Sphynx", "Tonquinês"
 ]
+
+const serviceGroups = [
+  {
+    title: 'Estética e higiene',
+    options: [
+      { name: 'detalhes.laco', id: 'laco', label: 'Laço / Gravata' },
+      { name: 'detalhes.brilho', id: 'brilho', label: 'Brilho / Enfeite' },
+      { name: 'detalhes.perfume', id: 'perfume', label: 'Perfume' },
+      { name: 'detalhes.escova_dente', id: 'escova_dente', label: 'Escovação dentária' },
+    ],
+  },
+  {
+    title: 'Tipo de tosa',
+    options: [
+      { name: 'tosa.higienica', id: 'tosa_hig', label: 'Higiênica' },
+      { name: 'tosa.maquina', id: 'tosa_maq', label: 'Máquina' },
+      { name: 'tosa.tesoura', id: 'tosa_tes', label: 'Tesoura' },
+    ],
+  },
+  {
+    title: 'Hidratação',
+    options: [
+      { name: 'hidratacao.padrao', id: 'hid_pad', label: 'Padrão' },
+      { name: 'hidratacao.hipoalergenico', id: 'hid_hipo', label: 'Hipoalergênica' },
+    ],
+  },
+] as const
+
+const fieldLabel = 'text-base font-semibold text-foreground'
+const fieldError = 'text-sm font-medium text-destructive'
+const selectTrigger = 'h-14 w-full text-base bg-white'
+
+function StepHeading({ step, title, hint }: { step: number; title: string; hint?: string }) {
+  return (
+    <div className="flex items-start gap-4">
+      <span aria-hidden className="grid size-9 shrink-0 place-items-center rounded-full bg-secondary font-heading text-base font-bold text-rosa-deep">
+        {step}
+      </span>
+      <div className="pt-1">
+        <h2 className="text-xl font-bold leading-tight md:text-2xl">{title}</h2>
+        {hint && <p className="mt-1 text-sm text-muted-foreground">{hint}</p>}
+      </div>
+    </div>
+  )
+}
+
+function ServiceToggle({ id, label, checked, onCheckedChange }: {
+  id: string
+  label: string
+  checked?: boolean
+  onCheckedChange: (checked: boolean) => void
+}) {
+  return (
+    <div className="flex items-center gap-3 rounded-xl border border-border bg-white pl-4 transition-colors has-data-checked:border-ceu has-data-checked:bg-accent">
+      <Checkbox id={id} checked={checked} onCheckedChange={onCheckedChange} className="size-6 rounded-md border-input" />
+      <Label htmlFor={id} className="flex-1 cursor-pointer self-stretch py-4 pr-4 text-base font-medium leading-snug">
+        {label}
+      </Label>
+    </div>
+  )
+}
 
 export default function TabletChecklistPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -130,46 +190,74 @@ export default function TabletChecklistPage() {
     e.target.value = ''
   }
 
+  const funcionarioSelect = (name: 'realizado_por_id' | 'vistoriado_por_id', label: string, placeholder: string) => (
+    <div className="space-y-2">
+      <Label className={fieldLabel}>{label}</Label>
+      <Controller
+        name={name}
+        control={control}
+        render={({ field }) => (
+          <Select onValueChange={field.onChange} value={field.value || undefined}>
+            <SelectTrigger className={selectTrigger} aria-invalid={!!errors[name]}>
+              <SelectValue placeholder={placeholder}>
+                {field.value ? funcionarios.find(f => f.id === field.value)?.nome : undefined}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              {funcionarios.map((func) => (
+                <SelectItem key={func.id} value={func.id}>{func.nome} ({func.cargo})</SelectItem>
+              ))}
+              {funcionarios.length === 0 && <SelectItem value="none">Cadastre no painel admin</SelectItem>}
+            </SelectContent>
+          </Select>
+        )}
+      />
+      {errors[name] && <p className={fieldError}>{errors[name]?.message}</p>}
+    </div>
+  )
+
   return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-8">
-      <Card className="max-w-4xl mx-auto shadow-lg pt-0">
-        <CardHeader className="bg-primary text-primary-foreground rounded-t-xl mb-6 p-6 flex flex-col items-center">
-          <div className="mb-4 bg-white p-2 rounded-[500px]">
-            <Image
-              src="/dermabichos-logo.svg"
-              alt="Dermabichos Logo"
-              width={100}
-              height={60}
-              className="object-contain h-[100px] w-auto"
-              priority
-            />
+    <main className="min-h-screen overflow-x-clip bg-espuma px-3 py-6 md:px-8 md:py-10">
+      <div className="relative mx-auto max-w-4xl rounded-[28px] bg-card shadow-[0_1px_2px_rgb(27_50_68/0.06),0_12px_40px_-12px_rgb(43_106_146/0.25)]">
+
+        <header className="flex items-center gap-5 rounded-t-[28px] border-b border-border px-5 py-6 md:gap-6 md:px-10 md:py-8">
+          <Image
+            src="/dermabichos-logo.svg"
+            alt="Dermabichos"
+            width={88}
+            height={88}
+            className="size-16 shrink-0 rounded-full ring-4 ring-accent md:size-22"
+            priority
+          />
+          <div className="min-w-0">
+            <h1 className="text-2xl font-extrabold leading-tight tracking-tight md:text-[2rem]">
+              Checklist de banho e tosa
+            </h1>
+            <p className="mt-1 text-base text-muted-foreground">
+              Preencha na recepção, junto com o tutor, antes do pet entrar para o banho.
+            </p>
           </div>
-          <CardTitle className="text-2xl md:text-2xl text-center font-bold">Checklist Banho & Tosa</CardTitle>
-          <CardDescription className="text-center text-primary-foreground/80 mt-1">
-            Preencha os dados do pet e o serviço a ser realizado
-          </CardDescription>
-        </CardHeader>
+        </header>
 
-        <CardContent className="px-4 md:px-8">
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-10">
+        <form onSubmit={handleSubmit(onSubmit)} noValidate>
+          <div className="space-y-12 px-5 py-8 md:px-10 md:py-10">
 
-            {/* Seção 1: Dados Básicos */}
-            <section className="space-y-4">
-              <h3 className="text-lg font-semibold border-b pb-2">1. Dados Básicos</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <section className="space-y-6">
+              <StepHeading step={1} title="Pet e tutor" />
+              <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="pet_nome" className="text-lg">Nome do Pet</Label>
-                  <Input id="pet_nome" {...register('pet_nome')} className="h-14 text-base" placeholder="Ex: Bob" />
-                  {errors.pet_nome && <p className="text-red-500 font-medium">{errors.pet_nome.message}</p>}
+                  <Label htmlFor="pet_nome" className={fieldLabel}>Nome do pet</Label>
+                  <Input id="pet_nome" {...register('pet_nome')} aria-invalid={!!errors.pet_nome} className="h-14 text-base" placeholder="Ex: Bob" />
+                  {errors.pet_nome && <p className={fieldError}>{errors.pet_nome.message}</p>}
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-lg">Espécie</Label>
+                  <Label className={fieldLabel}>Espécie</Label>
                   <Controller
                     name="especie"
                     control={control}
                     render={({ field }) => (
                       <Select onValueChange={field.onChange} value={field.value || undefined}>
-                        <SelectTrigger className="h-14 w-full text-md bg-white" style={{ height: '3.5rem' }}>
+                        <SelectTrigger className={selectTrigger}>
                           <SelectValue placeholder="Selecione..." />
                         </SelectTrigger>
                         <SelectContent>
@@ -179,10 +267,10 @@ export default function TabletChecklistPage() {
                       </Select>
                     )}
                   />
-                  {errors.especie && <p className="text-red-500 font-medium">{errors.especie.message}</p>}
+                  {errors.especie && <p className={fieldError}>{errors.especie.message}</p>}
                 </div>
-                <div className="space-y-2 flex flex-col">
-                  <Label className="text-lg">Raça</Label>
+                <div className="flex flex-col space-y-2">
+                  <Label className={fieldLabel}>Raça</Label>
                   <Controller
                     name="raca"
                     control={control}
@@ -193,8 +281,9 @@ export default function TabletChecklistPage() {
                             <Button
                               variant="outline"
                               role="combobox"
+                              aria-invalid={!!errors.raca}
                               className={cn(
-                                "h-14 w-full text-base bg-white justify-between font-normal",
+                                "h-14 w-full justify-between border-input bg-white px-3 text-base font-normal",
                                 !field.value && "text-muted-foreground"
                               )}
                             />
@@ -205,9 +294,9 @@ export default function TabletChecklistPage() {
                             : "Selecione a raça..."}
                           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                         </PopoverTrigger>
-                        <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                        <PopoverContent className="w-(--anchor-width) p-0" align="start">
                           <Command>
-                            <CommandInput placeholder="Buscar raça..." className="h-12 text-md" />
+                            <CommandInput placeholder="Buscar raça..." className="h-12 text-base" />
                             <CommandList>
                               <CommandEmpty>Nenhuma raça encontrada.</CommandEmpty>
                               <CommandGroup>
@@ -215,16 +304,15 @@ export default function TabletChecklistPage() {
                                   <CommandItem
                                     value={raca}
                                     key={raca}
-                                    onSelect={(currentValue) => {
-                                      // CommandItem value is lowercase by default in cmdk, but we want the original exact case.
-                                      // Shadcn CommandItem lowercases the value. It's safer to use the closure reference.
+                                    onSelect={() => {
+                                      // cmdk lowercases item values; use the closure to keep the original case.
                                       field.onChange(raca)
                                     }}
-                                    className="text-md py-2 cursor-pointer"
+                                    className="cursor-pointer py-2.5 text-base"
                                   >
                                     <Check
                                       className={cn(
-                                        "mr-2 h-4 w-4",
+                                        "mr-2 h-4 w-4 text-ceu-deep",
                                         raca === field.value ? "opacity-100" : "opacity-0"
                                       )}
                                     />
@@ -238,306 +326,181 @@ export default function TabletChecklistPage() {
                       </Popover>
                     )}
                   />
-                  {errors.raca && <p className="text-red-500 font-medium">{errors.raca.message}</p>}
+                  {errors.raca && <p className={fieldError}>{errors.raca.message}</p>}
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="tutor" className="text-lg">Nome do Tutor</Label>
-                  <Input id="tutor" {...register('tutor')} className="h-14 text-base" placeholder="Ex: João da Silva" />
-                  {errors.tutor && <p className="text-red-500 font-medium">{errors.tutor.message}</p>}
+                  <Label htmlFor="tutor" className={fieldLabel}>Nome do tutor</Label>
+                  <Input id="tutor" {...register('tutor')} aria-invalid={!!errors.tutor} className="h-14 text-base" placeholder="Ex: João da Silva" />
+                  {errors.tutor && <p className={fieldError}>{errors.tutor.message}</p>}
                 </div>
               </div>
             </section>
 
-            {/* Seção 2: Serviços e Detalhes */}
             <section className="space-y-6">
-              <h3 className="text-lg font-semibold border-b pb-2">2. Serviços Detalhados</h3>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                {/* Detalhes Estéticos */}
-                <div className="space-y-4 bg-gray-50 p-4 rounded-lg border">
-                  <h4 className="font-medium text-lg">Estética e Higiene</h4>
-                  <div className="space-y-4">
-                    <Controller
-                      name="detalhes.laco"
-                      control={control}
-                      render={({ field }) => (
-                        <div className="flex items-center space-x-3 bg-white p-3 rounded border">
-                          <Checkbox id="laco" checked={field.value} onCheckedChange={field.onChange} className="w-6 h-6" />
-                          <Label htmlFor="laco" className="text-md font-normal cursor-pointer flex-1">Laço / Gravata</Label>
-                        </div>
-                      )}
-                    />
-                    <Controller
-                      name="detalhes.brilho"
-                      control={control}
-                      render={({ field }) => (
-                        <div className="flex items-center space-x-3 bg-white p-3 rounded border">
-                          <Checkbox id="brilho" checked={field.value} onCheckedChange={field.onChange} className="w-6 h-6" />
-                          <Label htmlFor="brilho" className="text-md font-normal cursor-pointer flex-1">Brilho / Enfeite</Label>
-                        </div>
-                      )}
-                    />
-                    <Controller
-                      name="detalhes.perfume"
-                      control={control}
-                      render={({ field }) => (
-                        <div className="flex items-center space-x-3 bg-white p-3 rounded border">
-                          <Checkbox id="perfume" checked={field.value} onCheckedChange={field.onChange} className="w-6 h-6" />
-                          <Label htmlFor="perfume" className="text-md font-normal cursor-pointer flex-1">Perfume</Label>
-                        </div>
-                      )}
-                    />
-                    <Controller
-                      name="detalhes.escova_dente"
-                      control={control}
-                      render={({ field }) => (
-                        <div className="flex items-center space-x-3 bg-white p-3 rounded border">
-                          <Checkbox id="escova_dente" checked={field.value} onCheckedChange={field.onChange} className="w-6 h-6" />
-                          <Label htmlFor="escova_dente" className="text-md font-normal cursor-pointer flex-1">Escovação Dentária</Label>
-                        </div>
-                      )}
-                    />
-                  </div>
-                </div>
-
-                {/* Tosa */}
-                <div className="space-y-4 bg-gray-50 p-4 rounded-lg border">
-                  <h4 className="font-medium text-lg">Tipo de Tosa</h4>
-                  <div className="space-y-4">
-                    <Controller
-                      name="tosa.higienica"
-                      control={control}
-                      render={({ field }) => (
-                        <div className="flex items-center space-x-3 bg-white p-3 rounded border">
-                          <Checkbox id="tosa_hig" checked={field.value} onCheckedChange={field.onChange} className="w-6 h-6" />
-                          <Label htmlFor="tosa_hig" className="text-md font-normal cursor-pointer flex-1">Higiênica</Label>
-                        </div>
-                      )}
-                    />
-                    <Controller
-                      name="tosa.maquina"
-                      control={control}
-                      render={({ field }) => (
-                        <div className="flex items-center space-x-3 bg-white p-3 rounded border">
-                          <Checkbox id="tosa_maq" checked={field.value} onCheckedChange={field.onChange} className="w-6 h-6" />
-                          <Label htmlFor="tosa_maq" className="text-md font-normal cursor-pointer flex-1">Máquina</Label>
-                        </div>
-                      )}
-                    />
-                    <Controller
-                      name="tosa.tesoura"
-                      control={control}
-                      render={({ field }) => (
-                        <div className="flex items-center space-x-3 bg-white p-3 rounded border">
-                          <Checkbox id="tosa_tes" checked={field.value} onCheckedChange={field.onChange} className="w-6 h-6" />
-                          <Label htmlFor="tosa_tes" className="text-md font-normal cursor-pointer flex-1">Tesoura</Label>
-                        </div>
-                      )}
-                    />
-                  </div>
-                </div>
-
-                {/* Hidratação */}
-                <div className="space-y-4 bg-gray-50 p-4 rounded-lg border">
-                  <h4 className="font-medium text-lg">Hidratação</h4>
-                  <div className="space-y-4">
-                    <Controller
-                      name="hidratacao.padrao"
-                      control={control}
-                      render={({ field }) => (
-                        <div className="flex items-center space-x-3 bg-white p-3 rounded border">
-                          <Checkbox id="hid_pad" checked={field.value} onCheckedChange={field.onChange} className="w-6 h-6" />
-                          <Label htmlFor="hid_pad" className="text-md font-normal cursor-pointer flex-1">Padrão</Label>
-                        </div>
-                      )}
-                    />
-                    <Controller
-                      name="hidratacao.hipoalergenico"
-                      control={control}
-                      render={({ field }) => (
-                        <div className="flex items-center space-x-3 bg-white p-3 rounded border">
-                          <Checkbox id="hid_hipo" checked={field.value} onCheckedChange={field.onChange} className="w-6 h-6" />
-                          <Label htmlFor="hid_hipo" className="text-md font-normal cursor-pointer flex-1">Hipoalergênica</Label>
-                        </div>
-                      )}
-                    />
-                    <div className="space-y-2 pt-2">
-                      <Label htmlFor="hid_qual" className="text-base text-gray-600">Qual hidratação?</Label>
+              <StepHeading step={2} title="Serviços" hint="Toque em tudo o que será feito neste atendimento." />
+              <div className="grid grid-cols-1 gap-8 md:grid-cols-3 md:gap-5">
+                {serviceGroups.map((group) => (
+                  <fieldset key={group.title} className="space-y-3">
+                    <legend className="mb-3 font-heading text-lg font-semibold text-ceu-deep">{group.title}</legend>
+                    {group.options.map((opt) => (
                       <Controller
-                        name="hidratacao.qual"
+                        key={opt.id}
+                        name={opt.name}
                         control={control}
                         render={({ field }) => (
-                          <Select onValueChange={field.onChange} value={field.value || undefined}>
-                            <SelectTrigger className="h-14 w-full text-md bg-white" style={{ height: '3.5rem' }}>
-                              <SelectValue placeholder="Selecione o tipo...">
-                                {field.value}
-                              </SelectValue>
-                            </SelectTrigger>
-                            <SelectContent>
-                              {hidratacoes.map((hid) => (
-                                <SelectItem key={hid.id} value={hid.nome}>{hid.nome}</SelectItem>
-                              ))}
-                              {hidratacoes.length === 0 && <SelectItem value="Padrao">Cadastre no painel admin</SelectItem>}
-                            </SelectContent>
-                          </Select>
+                          <ServiceToggle id={opt.id} label={opt.label} checked={field.value} onCheckedChange={field.onChange} />
                         )}
                       />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </section>
-
-            {/* Seção 3: Observações e Fotos */}
-            <section className="space-y-4">
-              <h3 className="text-lg font-semibold border-b pb-2">3. Observações e Registros</h3>
-              <div className="space-y-2">
-                <Label htmlFor="observacao" className="text-md">Observações Gerais (Pelagem embolada, machucados, etc.)</Label>
-                <Textarea id="observacao" {...register('observacao')} className="min-h-32 text-lg" placeholder="Digite observações importantes sobre o estado do pet..." />
-              </div>
-
-              <div className="space-y-2 pt-4">
-                <Label htmlFor="fotos" className="text-sm block mb-2">Fotos (Máximo 2)</Label>
-
-                {fotos.length > 0 && (
-                  <div className="flex gap-4 mb-4">
-                    {fotos.map((foto, index) => (
-                      <div key={index} className="relative w-24 h-24 border border-gray-200 rounded-md overflow-hidden shadow-sm">
-                        <button
-                          type="button"
-                          onClick={() => removeFoto(index)}
-                          className="absolute top-1 right-1 bg-gray-200 text-white rounded-full w-6 h-6 flex items-center justify-center z-10 hover:bg-gray-300 transition-colors shadow-sm cursor-pointer"
-                        >
-                          <Trash2 className="w-4 h-4 text-red-500" />
-                        </button>
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={URL.createObjectURL(foto)}
-                          alt={`Foto ${index + 1}`}
-                          className="object-cover w-full h-full"
+                    ))}
+                    {group.title === 'Hidratação' && (
+                      <div className="space-y-2 pt-2">
+                        <Label htmlFor="hid_qual" className="text-sm font-medium text-muted-foreground">Qual hidratação?</Label>
+                        <Controller
+                          name="hidratacao.qual"
+                          control={control}
+                          render={({ field }) => (
+                            <Select onValueChange={field.onChange} value={field.value || undefined}>
+                              <SelectTrigger id="hid_qual" className={selectTrigger}>
+                                <SelectValue placeholder="Selecione o tipo...">
+                                  {field.value}
+                                </SelectValue>
+                              </SelectTrigger>
+                              <SelectContent>
+                                {hidratacoes.map((hid) => (
+                                  <SelectItem key={hid.id} value={hid.nome}>{hid.nome}</SelectItem>
+                                ))}
+                                {hidratacoes.length === 0 && <SelectItem value="Padrao">Cadastre no painel admin</SelectItem>}
+                              </SelectContent>
+                            </Select>
+                          )}
                         />
                       </div>
-                    ))}
-                  </div>
-                )}
-
-                {fotos.length < 2 && (
-                  <div className="flex items-center justify-center w-full">
-                    <label htmlFor="fotos" className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 border-gray-300">
-                      <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                        <p className="mb-2 text-sm text-gray-500">
-                          <span className="font-semibold">Toque para adicionar foto</span> ou enviar
-                        </p>
-                        <p className="text-xs text-gray-500">Selecionadas: {fotos.length} de 2</p>
-                      </div>
-                      <input id="fotos" type="file" accept="image/*" capture="environment" multiple className="hidden" onChange={handleFotoChange} />
-                    </label>
-                  </div>
-                )}
+                    )}
+                  </fieldset>
+                ))}
               </div>
             </section>
 
-            {/* Seção 4: Responsáveis e Assinatura */}
             <section className="space-y-6">
-              <h3 className="text-lg font-semibold border-b pb-2">4. Finalização e Termo</h3>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label className="text-base">Realizado por</Label>
-                  <Controller
-                    name="realizado_por_id"
-                    control={control}
-                    render={({ field }) => (
-                      <Select onValueChange={field.onChange} value={field.value || undefined}>
-                        <SelectTrigger className="h-14 w-full text-base" style={{ height: '3.5rem' }}>
-                          <SelectValue placeholder="Selecione o profissional...">
-                            {field.value ? funcionarios.find(f => f.id === field.value)?.nome : undefined}
-                          </SelectValue>
-                        </SelectTrigger>
-                        <SelectContent>
-                          {funcionarios.map((func) => (
-                            <SelectItem key={func.id} value={func.id}>{func.nome} ({func.cargo})</SelectItem>
-                          ))}
-                          {funcionarios.length === 0 && <SelectItem value="none">Cadastre no painel admin</SelectItem>}
-                        </SelectContent>
-                      </Select>
-                    )}
-                  />
-                  {errors.realizado_por_id && <p className="text-red-500 font-medium">{errors.realizado_por_id.message}</p>}
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="text-base">Vistoriado por</Label>
-                  <Controller
-                    name="vistoriado_por_id"
-                    control={control}
-                    render={({ field }) => (
-                      <Select onValueChange={field.onChange} value={field.value || undefined}>
-                        <SelectTrigger className="h-14 w-full text-base" style={{ height: '3.5rem' }}>
-                          <SelectValue placeholder="Selecione o responsável...">
-                            {field.value ? funcionarios.find(f => f.id === field.value)?.nome : undefined}
-                          </SelectValue>
-                        </SelectTrigger>
-                        <SelectContent>
-                          {funcionarios.map((func) => (
-                            <SelectItem key={func.id} value={func.id}>{func.nome} ({func.cargo})</SelectItem>
-                          ))}
-                          {funcionarios.length === 0 && <SelectItem value="none">Cadastre no painel admin</SelectItem>}
-                        </SelectContent>
-                      </Select>
-                    )}
-                  />
-                  {errors.vistoriado_por_id && <p className="text-red-500 font-medium">{errors.vistoriado_por_id.message}</p>}
-                </div>
+              <StepHeading step={3} title="Como o pet chegou" hint="Registre nós na pelagem, machucados, pulgas ou qualquer coisa fora do normal." />
+              <div className="space-y-2">
+                <Label htmlFor="observacao" className={fieldLabel}>Observações</Label>
+                <Textarea id="observacao" {...register('observacao')} className="min-h-32 bg-white px-3 py-3 text-base md:text-base" placeholder="Ex: orelha esquerda avermelhada, pelagem embolada nas patas traseiras" />
               </div>
 
-              <div className="bg-amber-50 p-6 rounded-lg border border-amber-200 mt-6">
-                <Controller
-                  name="termo_aceito"
-                  control={control}
-                  render={({ field }) => (
-                    <div className="flex items-start space-x-4">
-                      <Checkbox
-                        id="termo"
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                        className="w-8 h-8 mt-1 border-amber-400 data-[state=checked]:bg-amber-500"
+              <div className="space-y-3">
+                <div className="flex items-baseline justify-between">
+                  <span className={fieldLabel}>Fotos</span>
+                  <span className="text-sm text-muted-foreground">{fotos.length} de 2</span>
+                </div>
+
+                <div className="flex flex-wrap gap-4">
+                  {fotos.map((foto, index) => (
+                    <div key={index} className="relative size-32 overflow-hidden rounded-2xl ring-1 ring-border">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={URL.createObjectURL(foto)}
+                        alt={`Foto ${index + 1}`}
+                        className="size-full object-cover"
                       />
-                      <Label htmlFor="termo" className="text-lg cursor-pointer font-medium text-amber-900 leading-relaxed">
-                        Declaro que os serviços selecionados foram conferidos e que as observações descritas acima correspondem ao estado atual do animal na entrada.
-                      </Label>
+                      <button
+                        type="button"
+                        onClick={() => removeFoto(index)}
+                        aria-label={`Remover foto ${index + 1}`}
+                        className="absolute top-2 right-2 grid size-9 place-items-center rounded-full bg-white/95 text-destructive shadow-sm transition-colors hover:bg-white focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/60"
+                      >
+                        <Trash2 className="size-4" />
+                      </button>
                     </div>
-                  )}
-                />
-                {errors.termo_aceito && <p className="text-red-500 font-medium mt-2">{errors.termo_aceito.message}</p>}
-              </div>
+                  ))}
 
-              <div className="space-y-4">
-                <Label className="text-xl block font-semibold text-center mt-8">Assinatura do Tutor</Label>
-                <Controller
-                  name="assinatura"
-                  control={control}
-                  render={({ field }) => (
-                    <SignaturePad
-                      onEnd={(base64) => field.onChange(base64)}
-                      error={errors.assinatura?.message}
-                    />
+                  {fotos.length < 2 && (
+                    <label
+                      htmlFor="fotos"
+                      className="flex size-32 cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-ceu/70 bg-accent/50 text-ceu-deep transition-colors hover:bg-accent has-focus-visible:ring-3 has-focus-visible:ring-ring/60"
+                    >
+                      <Camera className="size-7" aria-hidden />
+                      <span className="text-sm font-semibold">Adicionar foto</span>
+                      <input id="fotos" type="file" accept="image/*" capture="environment" multiple className="sr-only" onChange={handleFotoChange} />
+                    </label>
                   )}
-                />
+                </div>
               </div>
-
             </section>
 
-            {/* Submit */}
-            <div className="pt-8 pb-12">
-              <Button type="submit" disabled={isSubmitting} className="w-full h-16 text-xl font-bold bg-green-600 hover:bg-green-700">
-                {isSubmitting ? 'Salvando...' : 'Finalizar'}
-              </Button>
+            <section className="space-y-6">
+              <StepHeading step={4} title="Equipe" />
+              <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                {funcionarioSelect('realizado_por_id', 'Realizado por', 'Selecione o profissional...')}
+                {funcionarioSelect('vistoriado_por_id', 'Vistoriado por', 'Selecione o responsável...')}
+              </div>
+            </section>
+          </div>
+
+          {/* Perforated tear line: the tutor's stub */}
+          <div aria-hidden className="relative h-0">
+            <span className="absolute top-0 -left-4 size-8 -translate-y-1/2 rounded-full bg-espuma" />
+            <span className="absolute top-0 -right-4 size-8 -translate-y-1/2 rounded-full bg-espuma" />
+            <span className="absolute inset-x-6 top-0 border-t-2 border-dashed border-rosa/60" />
+          </div>
+
+          <section className="space-y-6 rounded-b-[28px] bg-secondary/40 px-5 pt-10 pb-8 md:px-10 md:pb-10">
+            <div className="flex items-start gap-4">
+              <span aria-hidden className="grid size-9 shrink-0 place-items-center rounded-full bg-rosa font-heading text-base font-bold text-white">5</span>
+              <div className="pt-1">
+                <h2 className="text-xl font-bold leading-tight md:text-2xl">Para o tutor</h2>
+                <p className="mt-1 text-sm text-muted-foreground">Confira os dados acima, marque a declaração e assine.</p>
+              </div>
             </div>
 
-          </form>
-        </CardContent>
-      </Card>
-    </div>
+            <div>
+              <Controller
+                name="termo_aceito"
+                control={control}
+                render={({ field }) => (
+                  <div className={cn(
+                    "flex items-start gap-4 rounded-2xl border bg-white p-5 transition-colors has-data-checked:border-rosa",
+                    errors.termo_aceito ? "border-destructive" : "border-rosa/40"
+                  )}>
+                    <Checkbox
+                      id="termo"
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                      className="mt-0.5 size-7 rounded-md border-rosa data-checked:border-rosa data-checked:bg-rosa data-checked:text-white"
+                    />
+                    <Label htmlFor="termo" className="cursor-pointer text-base font-medium leading-relaxed text-foreground md:text-lg">
+                      Declaro que os serviços selecionados foram conferidos e que as observações descritas acima correspondem ao estado atual do animal na entrada.
+                    </Label>
+                  </div>
+                )}
+              />
+              {errors.termo_aceito && <p className={cn(fieldError, 'mt-2')}>{errors.termo_aceito.message}</p>}
+            </div>
+
+            <div className="space-y-3">
+              <span className={fieldLabel}>Assinatura do tutor</span>
+              <Controller
+                name="assinatura"
+                control={control}
+                render={({ field }) => (
+                  <SignaturePad
+                    onEnd={(base64) => field.onChange(base64)}
+                    error={errors.assinatura?.message}
+                  />
+                )}
+              />
+            </div>
+
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+              className="mt-4 h-16 w-full rounded-2xl text-xl font-bold shadow-[0_6px_0_-1px_var(--ceu-deep)] hover:bg-ceu/90 active:not-aria-[haspopup]:translate-y-0.5 active:shadow-[0_3px_0_-1px_var(--ceu-deep)]"
+            >
+              {isSubmitting ? 'Salvando...' : 'Finalizar checklist'}
+            </Button>
+          </section>
+        </form>
+      </div>
+    </main>
   )
 }

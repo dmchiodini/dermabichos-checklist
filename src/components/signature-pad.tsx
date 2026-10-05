@@ -2,6 +2,7 @@
 
 import React, { useRef, useEffect } from 'react'
 import SignatureCanvas from 'react-signature-canvas'
+import { Eraser } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 interface SignaturePadProps {
@@ -45,24 +46,31 @@ export function SignaturePad({ onEnd, error }: SignaturePadProps) {
   }
 
   return (
-    <div className="flex flex-col space-y-2">
-      <div className={`border-2 rounded-md bg-white ${error ? 'border-red-500' : 'border-gray-300'}`}>
+    <div className="flex flex-col gap-3">
+      <div className={`relative rounded-2xl border-2 bg-white ${error ? 'border-destructive' : 'border-border'}`}>
+        <div aria-hidden className="pointer-events-none absolute inset-x-6 bottom-12 flex items-end gap-2 text-muted-foreground/70">
+          <span className="font-heading text-2xl leading-none">×</span>
+          <span className="mb-1 flex-1 border-b border-input" />
+        </div>
         <SignatureCanvas
           ref={sigCanvas}
+          penColor="#1b3244"
           canvasProps={{
-            className: 'w-full h-48 rounded-md touch-none',
+            className: 'relative w-full h-56 rounded-2xl touch-none',
+            'aria-label': 'Área de assinatura do tutor',
           }}
           onEnd={handleEnd}
         />
       </div>
-      {error && <p className="text-sm font-medium text-red-500">{error}</p>}
-      <Button 
-        type="button" 
-        variant="outline" 
-        onClick={handleClear} 
-        className="w-full h-12 text-base font-medium"
+      {error && <p className="text-sm font-medium text-destructive">{error}</p>}
+      <Button
+        type="button"
+        variant="outline"
+        onClick={handleClear}
+        className="h-12 self-end rounded-xl px-5 text-base font-semibold text-muted-foreground"
       >
-        Limpar Assinatura
+        <Eraser className="size-4" aria-hidden />
+        Limpar assinatura
       </Button>
     </div>
   )
