@@ -4,7 +4,7 @@ import React, { useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Plus, Clock, Play, CheckCircle2, ChevronRight, ShowerHead } from 'lucide-react'
+import { Plus, Clock, Play, CheckCircle2, ChevronRight, ShowerHead, Share2 } from 'lucide-react'
 import { toast } from 'react-toastify'
 import { updateChecklistStatus } from '@/app/actions/checklist'
 import { Button } from '@/components/ui/button'
@@ -37,11 +37,17 @@ export default function FilaClient({ initialChecklists, user }: { initialCheckli
         return { color: 'text-amber-600', bg: 'bg-amber-100', border: 'border-amber-200', icon: Clock }
       case 'Em banho':
         return { color: 'text-ceu-deep', bg: 'bg-ceu/20', border: 'border-ceu', icon: ShowerHead }
+      case 'Banho finalizado':
+        return { color: 'text-green-700', bg: 'bg-green-100', border: 'border-green-300', icon: CheckCircle2 }
       case 'Finalizado':
         return { color: 'text-green-600', bg: 'bg-green-100', border: 'border-green-200', icon: CheckCircle2 }
       default:
         return { color: 'text-gray-600', bg: 'bg-gray-100', border: 'border-gray-200', icon: Clock }
     }
+  }
+
+  const handleShare = (checklist: any) => {
+    router.push(`/admin/print/${checklist.id}?share=true`)
   }
 
   const agendamentosHoje = checklists.length
@@ -124,7 +130,7 @@ export default function FilaClient({ initialChecklists, user }: { initialCheckli
 
                 <div className="border-t border-border bg-accent/30 p-3 flex items-center justify-between gap-2">
                   <div className="flex gap-2">
-                    {checklist.status !== 'Finalizado' && checklist.status !== 'Em banho' && (
+                    {checklist.status !== 'Finalizado' && checklist.status !== 'Em banho' && checklist.status !== 'Banho finalizado' && (
                       <Button 
                         size="sm" 
                         variant="outline" 
@@ -134,25 +140,47 @@ export default function FilaClient({ initialChecklists, user }: { initialCheckli
                         <Play className="size-4 mr-1" /> Iniciar Banho
                       </Button>
                     )}
+                    {checklist.status === 'Em banho' && (
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        onClick={() => handleStatusChange(checklist.id, 'Banho finalizado')}
+                        className="text-green-700 border-green-300 hover:bg-green-100"
+                      >
+                        <CheckCircle2 className="size-4 mr-1" /> Banho Concluído
+                      </Button>
+                    )}
                   </div>
                   
-                  {checklist.status === 'Finalizado' ? (
-                    <div className="flex-1 py-2 text-center text-sm font-semibold text-green-700 bg-green-50 rounded-lg border border-green-200">
-                      Atendimento Concluído
-                    </div>
-                  ) : (
-                    <Link href={isRecepcao ? `/checklist?edit=${checklist.id}` : '#'} className="flex-1" onClick={(e) => {
-                      if (!isRecepcao) {
-                        e.preventDefault();
-                        toast.info('Apenas a recepção pode editar o checklist.');
-                      }
-                    }}>
-                      <Button size="sm" className="w-full bg-rosa text-white hover:bg-rosa/90 gap-1" disabled={!isRecepcao}>
-                        Editar / Finalizar
-                        <ChevronRight className="size-4" />
+                  <div className="flex flex-1 items-center gap-2">
+                    {checklist.status === 'Finalizado' ? (
+                      <Link href={`/checklist?edit=${checklist.id}`} className="flex-1 flex">
+                        <Button size="sm" variant="outline" className="w-full border-green-200 text-green-700 bg-green-50 hover:bg-green-100 gap-1 font-semibold">
+                          <CheckCircle2 className="size-4" />
+                          Ver Concluído
+                        </Button>
+                      </Link>
+                    ) : (
+                      <Link href={`/checklist?edit=${checklist.id}`} className="flex-1 flex">
+                        <Button size="sm" className="w-full bg-rosa text-white hover:bg-rosa/90 gap-1">
+                          {isRecepcao ? 'Editar / Finalizar' : 'Visualizar'}
+                          <ChevronRight className="size-4" />
+                        </Button>
+                      </Link>
+                    )}
+
+                    {isRecepcao && checklist.status === 'Finalizado' && (
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        onClick={() => handleShare(checklist)}
+                        className="px-2 text-muted-foreground hover:text-foreground border-border shrink-0"
+                        title="Compartilhar"
+                      >
+                        <Share2 className="size-4" />
                       </Button>
-                    </Link>
-                  )}
+                    )}
+                  </div>
                 </div>
               </div>
             )

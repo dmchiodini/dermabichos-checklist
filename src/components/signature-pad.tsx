@@ -8,10 +8,30 @@ import { Button } from '@/components/ui/button'
 interface SignaturePadProps {
   onEnd: (base64: string) => void
   error?: string
+  value?: string
+  readOnly?: boolean
 }
 
-export function SignaturePad({ onEnd, error }: SignaturePadProps) {
+export function SignaturePad({ onEnd, error, value, readOnly }: SignaturePadProps) {
   const sigCanvas = useRef<SignatureCanvas>(null)
+
+  useEffect(() => {
+    if (value && sigCanvas.current) {
+      // Clear before loading to ensure we don't draw over existing strokes
+      // Removemos as dimensões fixas para ele se ajustar ao tamanho real do canvas (w-full)
+      sigCanvas.current.fromDataURL(value, { ratio: Math.max(window.devicePixelRatio || 1, 1) })
+      // Use setOptions to disable drawing if readonly
+      if (readOnly) {
+        sigCanvas.current.off()
+      } else {
+        sigCanvas.current.on()
+      }
+    } else if (readOnly && sigCanvas.current) {
+       sigCanvas.current.off()
+    } else if (!readOnly && sigCanvas.current) {
+       sigCanvas.current.on()
+    }
+  }, [value, readOnly])
 
   // Desabilita o scroll nativo no mobile/tablet quando tocar no canvas
   useEffect(() => {
@@ -40,7 +60,7 @@ export function SignaturePad({ onEnd, error }: SignaturePadProps) {
     if (sigCanvas.current?.isEmpty()) {
       onEnd('')
     } else {
-      const dataUrl = sigCanvas.current?.getTrimmedCanvas().toDataURL('image/png')
+      const dataUrl = sigCanvas.current?.getCanvas().toDataURL('image/png')
       onEnd(dataUrl || '')
     }
   }
@@ -56,22 +76,24 @@ export function SignaturePad({ onEnd, error }: SignaturePadProps) {
           ref={sigCanvas}
           penColor="#1b3244"
           canvasProps={{
-            className: 'relative w-full h-56 rounded-2xl touch-none',
+            className: `relative w-full h-56 rounded-2xl touch-none ${readOnly ? 'pointer-events-none' : ''}`,
             'aria-label': 'Área de assinatura do tutor',
           }}
           onEnd={handleEnd}
         />
       </div>
       {error && <p className="text-sm font-medium text-destructive">{error}</p>}
-      <Button
-        type="button"
-        variant="outline"
-        onClick={handleClear}
-        className="h-12 self-end rounded-xl px-5 text-base font-semibold text-muted-foreground"
-      >
-        <Eraser className="size-4" aria-hidden />
-        Limpar assinatura
-      </Button>
+      {!readOnly && (
+        <Button
+          type="button"
+          variant="outline"
+          onClick={handleClear}
+          className="h-12 self-end rounded-xl px-5 text-base font-semibold text-muted-foreground"
+        >
+          <Eraser className="size-4" aria-hidden />
+          Limpar assinatura
+        </Button>
+      )}
     </div>
   )
 }

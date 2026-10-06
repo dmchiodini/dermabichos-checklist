@@ -77,6 +77,7 @@ export default function DashboardClient({
   const [editingFuncionario, setEditingFuncionario] = useState<any>(null)
   const [selectedChecklist, setSelectedChecklist] = useState<any | null>(null)
   const [checklistToDelete, setChecklistToDelete] = useState<string | null>(null)
+  const [photoPreviewUrl, setPhotoPreviewUrl] = useState<string | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
 
   return (
@@ -130,6 +131,7 @@ export default function DashboardClient({
               const status = item.status || 'Aguardando'
               const config = status === 'Aguardando' ? { color: 'text-amber-600', bg: 'bg-amber-100', border: 'border-amber-200' } :
                              status === 'Em banho' ? { color: 'text-ceu-deep', bg: 'bg-ceu/20', border: 'border-ceu' } :
+                             status === 'Banho finalizado' ? { color: 'text-green-700', bg: 'bg-green-100', border: 'border-green-300' } :
                              status === 'Finalizado' ? { color: 'text-green-600', bg: 'bg-green-100', border: 'border-green-200' } :
                              { color: 'text-gray-600', bg: 'bg-gray-100', border: 'border-gray-200' }
 
@@ -449,12 +451,22 @@ export default function DashboardClient({
                 {(selectedChecklist.foto_1_url || selectedChecklist.foto_2_url) && (
                   <DetailBlock title="Fotos">
                     <div className="flex flex-wrap gap-4">
-                      {selectedChecklist.foto_1_url && (
-                        <img src={selectedChecklist.foto_1_url} alt={`Foto 1 de ${selectedChecklist.pet_nome}`} className="size-48 rounded-2xl object-cover ring-1 ring-border" />
-                      )}
-                      {selectedChecklist.foto_2_url && (
-                        <img src={selectedChecklist.foto_2_url} alt={`Foto 2 de ${selectedChecklist.pet_nome}`} className="size-48 rounded-2xl object-cover ring-1 ring-border" />
-                      )}
+                      {[selectedChecklist.foto_1_url, selectedChecklist.foto_2_url].filter(Boolean).map((url, i) => (
+                        <div key={i} className="group relative size-48 overflow-hidden rounded-2xl ring-1 ring-border">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={url} alt={`Foto ${i + 1} de ${selectedChecklist.pet_nome}`} className="size-full object-cover transition-transform duration-300 group-hover:scale-105" />
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
+                            <Button 
+                              variant="secondary" 
+                              size="icon" 
+                              className="size-12 rounded-full shadow-lg"
+                              onClick={() => setPhotoPreviewUrl(url)}
+                            >
+                              <Eye className="size-6 text-ceu-deep" aria-hidden />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </DetailBlock>
                 )}
@@ -466,6 +478,26 @@ export default function DashboardClient({
                 </DetailBlock>
               </div>
             </>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Photo Preview Modal */}
+      <Dialog open={!!photoPreviewUrl} onOpenChange={(open) => !open && setPhotoPreviewUrl(null)}>
+        <DialogContent className="max-w-4xl border-none bg-transparent p-0 shadow-none">
+          {photoPreviewUrl && (
+            <div className="relative flex items-center justify-center">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={photoPreviewUrl} alt="Foto ampliada" className="max-h-[85vh] w-auto max-w-[95vw] rounded-2xl object-contain shadow-2xl" />
+              <Button 
+                variant="outline" 
+                size="icon" 
+                className="absolute -top-4 -right-4 size-10 rounded-full bg-white shadow-md hover:bg-gray-100"
+                onClick={() => setPhotoPreviewUrl(null)}
+              >
+                <span className="font-heading text-xl">×</span>
+              </Button>
+            </div>
           )}
         </DialogContent>
       </Dialog>

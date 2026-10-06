@@ -4,7 +4,7 @@ import React, { useState } from 'react'
 import Image from 'next/image'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Trash2, Check, ChevronsUpDown, Camera } from 'lucide-react'
+import { Trash2, Check, ChevronsUpDown, Camera, X } from 'lucide-react'
 import { checklistSchema, ChecklistFormValues } from '@/schemas/checklist.schema'
 import { SignaturePad } from '@/components/signature-pad'
 import { submitChecklist, getLookupData, updateChecklistStatus } from '@/app/actions/checklist'
@@ -106,13 +106,15 @@ function ServiceToggle({ id, label, checked, onCheckedChange }: {
   )
 }
 
-export default function TabletClient({ user }: { user?: any }) {
+export default function TabletClient({ user, isRecepcao = true }: { user?: any, isRecepcao?: boolean }) {
   const searchParams = useSearchParams()
   const router = useRouter()
   const editId = searchParams.get('edit')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [fotos, setFotos] = useState<File[]>([])
   const [existingFotos, setExistingFotos] = useState<string[]>([])
+  const [isFinalizado, setIsFinalizado] = useState(false)
+  const [checklistStatus, setChecklistStatus] = useState<string>('Aguardando')
 
   const [funcionarios, setFuncionarios] = useState<Database['public']['Tables']['funcionarios']['Row'][]>([])
   const [hidratacoes, setHidratacoes] = useState<Database['public']['Tables']['tipos_hidratacao']['Row'][]>([])
@@ -183,6 +185,13 @@ export default function TabletClient({ user }: { user?: any }) {
           if (data.foto_1_url) loadedFotos.push(data.foto_1_url)
           if (data.foto_2_url) loadedFotos.push(data.foto_2_url)
           setExistingFotos(loadedFotos)
+          
+          if (data.status) {
+            setChecklistStatus(data.status)
+            if (data.status === 'Finalizado') {
+              setIsFinalizado(true)
+            }
+          }
         }
       }
       loadChecklist()
@@ -207,14 +216,16 @@ export default function TabletClient({ user }: { user?: any }) {
           await updateChecklistStatus(editId, 'Finalizado')
         }
         router.push('/')
+        // Não voltamos isSubmitting para false aqui porque vamos mudar de página, 
+        // assim o botão não pisca como habilitado enquanto o Next.js navega.
       } else {
+        setIsSubmitting(false)
         toast.error('Erro ao salvar: ' + result.message)
       }
     } catch (error) {
       console.error(error)
-      toast.error('Ocorreu um erro inesperado.')
-    } finally {
       setIsSubmitting(false)
+      toast.error('Ocorreu um erro inesperado.')
     }
   }
 
@@ -263,7 +274,16 @@ export default function TabletClient({ user }: { user?: any }) {
     <main className="min-h-screen overflow-x-clip bg-espuma px-3 py-6 md:px-8 md:py-10">
       <div className="relative mx-auto max-w-4xl rounded-[28px] bg-card shadow-[0_1px_2px_rgb(27_50_68/0.06),0_12px_40px_-12px_rgb(43_106_146/0.25)]">
 
-        <header className="flex items-center gap-5 rounded-t-[28px] border-b border-border px-5 py-6 md:gap-6 md:px-10 md:py-8">
+        <header className="flex items-center gap-5 rounded-t-[28px] border-b border-border px-5 py-6 md:gap-6 md:px-10 md:py-8 relative">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="absolute top-4 right-4 md:top-6 md:right-6 rounded-full text-muted-foreground hover:bg-muted"
+            onClick={() => router.push('/')}
+            title="Fechar e Voltar para Fila"
+          >
+            <X className="size-6" />
+          </Button>
           <Image
             src="/dermabichos-logo.svg"
             alt="Dermabichos"
@@ -272,20 +292,24 @@ export default function TabletClient({ user }: { user?: any }) {
             className="size-16 shrink-0 rounded-full ring-4 ring-accent md:size-22"
             priority
           />
-          <div className="min-w-0">
+          <div className="min-w-0 pr-10">
             <h1 className="text-2xl font-extrabold leading-tight tracking-tight md:text-[2rem]">
               Checklist de banho e tosa
             </h1>
             <p className="mt-1 text-base text-muted-foreground">
-              Preencha na recepção, junto com o tutor, antes do pet entrar para o banho.
+              {isRecepcao ? 'Preencha na recepção, junto com o tutor, antes do pet entrar para o banho.' : 'Modo de visualização (apenas recepção pode editar).'}
             </p>
           </div>
         </header>
 
-        <form onSubmit={handleSubmit(onSubmit)} noValidate>
+        <form onSubmit={handleSubmit(onSubmit, (errs) => {
+          console.error(errs)
+          toast.error('Preencha os campos corretamente antes de salvar.')
+        })} noValidate>
+          <fieldset disabled={isFinalizado}>
           <div className="space-y-12 px-5 py-8 md:px-10 md:py-10">
 
-            <section className="space-y-6">
+            <fieldset disabled={!isRecepcao} className="space-y-6">
               <StepHeading step={1} title="Pet e tutor" />
               <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
                 <div className="space-y-2">
@@ -377,9 +401,9 @@ export default function TabletClient({ user }: { user?: any }) {
                   {errors.tutor && <p className={fieldError}>{errors.tutor.message}</p>}
                 </div>
               </div>
-            </section>
+            </fieldset>
 
-            <section className="space-y-6">
+            <fieldset disabled={!isRecepcao} className="space-y-6">
               <StepHeading step={2} title="Serviços" hint="Toque em tudo o que será feito neste atendimento." />
               <div className="grid grid-cols-1 gap-8 md:grid-cols-3 md:gap-5">
                 {serviceGroups.map((group) => (
@@ -422,7 +446,7 @@ export default function TabletClient({ user }: { user?: any }) {
                   </fieldset>
                 ))}
               </div>
-            </section>
+            </fieldset>
 
             <section className="space-y-6">
               <StepHeading step={3} title="Como o pet chegou" hint="Registre nós na pelagem, machucados, pulgas ou qualquer coisa fora do normal." />
@@ -434,30 +458,53 @@ export default function TabletClient({ user }: { user?: any }) {
               <div className="space-y-3">
                 <div className="flex items-baseline justify-between">
                   <span className={fieldLabel}>Fotos</span>
-                  <span className="text-sm text-muted-foreground">{fotos.length} de 2</span>
+                  <span className="text-sm text-muted-foreground">{existingFotos.length + fotos.length} de 2</span>
                 </div>
 
                 <div className="flex flex-wrap gap-4">
+                  {existingFotos.map((url, index) => (
+                    <div key={`existing-${index}`} className="relative size-32 overflow-hidden rounded-2xl ring-1 ring-border">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={url}
+                        alt={`Foto existente ${index + 1}`}
+                        className="size-full object-cover"
+                      />
+                      {!isFinalizado && (
+                        <button
+                          type="button"
+                          onClick={() => setExistingFotos(prev => prev.filter((_, i) => i !== index))}
+                          aria-label={`Remover foto existente ${index + 1}`}
+                          className="absolute top-2 right-2 grid size-9 place-items-center rounded-full bg-white/95 text-destructive shadow-sm transition-colors hover:bg-white focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/60"
+                        >
+                          <Trash2 className="size-4" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+
                   {fotos.map((foto, index) => (
                     <div key={index} className="relative size-32 overflow-hidden rounded-2xl ring-1 ring-border">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={URL.createObjectURL(foto)}
-                        alt={`Foto ${index + 1}`}
+                        alt={`Foto nova ${index + 1}`}
                         className="size-full object-cover"
                       />
-                      <button
-                        type="button"
-                        onClick={() => removeFoto(index)}
-                        aria-label={`Remover foto ${index + 1}`}
-                        className="absolute top-2 right-2 grid size-9 place-items-center rounded-full bg-white/95 text-destructive shadow-sm transition-colors hover:bg-white focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/60"
-                      >
-                        <Trash2 className="size-4" />
-                      </button>
+                      {!isFinalizado && (
+                        <button
+                          type="button"
+                          onClick={() => removeFoto(index)}
+                          aria-label={`Remover foto ${index + 1}`}
+                          className="absolute top-2 right-2 grid size-9 place-items-center rounded-full bg-white/95 text-destructive shadow-sm transition-colors hover:bg-white focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/60"
+                        >
+                          <Trash2 className="size-4" />
+                        </button>
+                      )}
                     </div>
                   ))}
 
-                  {fotos.length < 2 && (
+                  {(existingFotos.length + fotos.length) < 2 && !isFinalizado && (
                     <label
                       htmlFor="fotos"
                       className="flex size-32 cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-ceu/70 bg-accent/50 text-ceu-deep transition-colors hover:bg-accent has-focus-visible:ring-3 has-focus-visible:ring-ring/60"
@@ -471,13 +518,13 @@ export default function TabletClient({ user }: { user?: any }) {
               </div>
             </section>
 
-            <section className="space-y-6">
+            <fieldset disabled={!isRecepcao} className="space-y-6">
               <StepHeading step={4} title="Equipe" />
               <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
                 {funcionarioSelect('realizado_por_id', 'Realizado por', 'Selecione o profissional...')}
                 {funcionarioSelect('vistoriado_por_id', 'Vistoriado por', 'Selecione o responsável...')}
               </div>
-            </section>
+            </fieldset>
           </div>
 
           {/* Perforated tear line: the tutor's stub */}
@@ -487,12 +534,17 @@ export default function TabletClient({ user }: { user?: any }) {
             <span className="absolute inset-x-6 top-0 border-t-2 border-dashed border-rosa/60" />
           </div>
 
-          <section className="space-y-6 rounded-b-[28px] bg-secondary/40 px-5 pt-10 pb-8 md:px-10 md:pb-10">
+          <fieldset disabled={!isRecepcao || (checklistStatus !== 'Banho finalizado' && checklistStatus !== 'Finalizado')} className="space-y-6 rounded-b-[28px] bg-secondary/40 px-5 pt-10 pb-8 md:px-10 md:pb-10">
             <div className="flex items-start gap-4">
               <span aria-hidden className="grid size-9 shrink-0 place-items-center rounded-full bg-rosa font-heading text-base font-bold text-white">5</span>
               <div className="pt-1">
                 <h2 className="text-xl font-bold leading-tight md:text-2xl">Para o tutor</h2>
                 <p className="mt-1 text-sm text-muted-foreground">Confira os dados acima, marque a declaração e assine.</p>
+                {checklistStatus !== 'Banho finalizado' && checklistStatus !== 'Finalizado' && (
+                  <p className="mt-2 text-sm font-semibold text-destructive">
+                    Aguarde o banho ser finalizado para coletar a assinatura.
+                  </p>
+                )}
               </div>
             </div>
 
@@ -503,12 +555,14 @@ export default function TabletClient({ user }: { user?: any }) {
                 render={({ field }) => (
                   <div className={cn(
                     "flex items-start gap-4 rounded-2xl border bg-white p-5 transition-colors has-data-checked:border-rosa",
-                    errors.termo_aceito ? "border-destructive" : "border-rosa/40"
+                    errors.termo_aceito ? "border-destructive" : "border-rosa/40",
+                    (!isRecepcao || (checklistStatus !== 'Banho finalizado' && checklistStatus !== 'Finalizado')) && "opacity-60"
                   )}>
                     <Checkbox
                       id="termo"
                       checked={field.value}
                       onCheckedChange={field.onChange}
+                      disabled={!isRecepcao || (checklistStatus !== 'Banho finalizado' && checklistStatus !== 'Finalizado')}
                       className="mt-0.5 size-7 rounded-md border-rosa data-checked:border-rosa data-checked:bg-rosa data-checked:text-white"
                     />
                     <Label htmlFor="termo" className="cursor-pointer text-base font-medium leading-relaxed text-foreground md:text-lg">
@@ -529,11 +583,15 @@ export default function TabletClient({ user }: { user?: any }) {
                   <SignaturePad
                     onEnd={(base64) => field.onChange(base64)}
                     error={errors.assinatura?.message}
+                    value={field.value}
+                    readOnly={!isRecepcao || (checklistStatus !== 'Banho finalizado' && checklistStatus !== 'Finalizado') || isFinalizado}
                   />
                 )}
               />
             </div>
+          </fieldset>
 
+          {!isFinalizado && (
             <Button
               type="submit"
               disabled={isSubmitting}
@@ -541,7 +599,15 @@ export default function TabletClient({ user }: { user?: any }) {
             >
               {isSubmitting ? 'Salvando...' : (editId ? 'Salvar Alterações' : 'Iniciar Checklist')}
             </Button>
-          </section>
+          )}
+          {isFinalizado && (
+            <div className="mt-4 p-4 rounded-2xl bg-green-50 border border-green-200 text-center">
+              <p className="text-lg font-bold text-green-700">Serviço Finalizado</p>
+              <p className="text-sm text-green-600 mt-1">Este checklist já foi concluído e não pode mais ser alterado.</p>
+            </div>
+          )}
+
+          </fieldset>
         </form>
       </div>
     </main>

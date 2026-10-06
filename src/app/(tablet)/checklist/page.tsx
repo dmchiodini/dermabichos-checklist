@@ -21,5 +21,5 @@ export default async function TabletPage(props: { searchParams: Promise<{ edit?:
     redirect('/')
   }
 
-  return <TabletClient user={user} />
+  return <TabletClient user={user} isRecepcao={isRecepcao} />
 }
