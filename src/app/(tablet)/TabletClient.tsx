@@ -583,7 +583,7 @@ export default function TabletClient({ user, isRecepcao = true }: { user?: any, 
                   <SignaturePad
                     onEnd={(base64) => field.onChange(base64)}
                     error={errors.assinatura?.message}
-                    value={field.value}
+                    value={field.value || undefined}
                     readOnly={!isRecepcao || (checklistStatus !== 'Banho finalizado' && checklistStatus !== 'Finalizado') || isFinalizado}
                   />
                 )}

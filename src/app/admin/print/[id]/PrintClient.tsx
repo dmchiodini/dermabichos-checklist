@@ -38,12 +38,18 @@ export default function PrintClient({ checklist, funcionarios }: { checklist: an
     try {
       const html2pdf = (await import('html2pdf.js')).default
       const element = document.getElementById('printable-area')
+      if (!element) {
+        toast.error('Erro: não foi possível encontrar o conteúdo para gerar o PDF.')
+        setIsGenerating(false)
+        return
+      }
+
       const opt = {
         margin: 0.5,
         filename: `Checklist_${checklist.pet_nome.replace(/\s+/g, '_')}.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
+        image: { type: 'jpeg' as const, quality: 0.98 },
         html2canvas: { scale: 2, useCORS: true, allowTaint: true },
-        jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
+        jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' as const }
       }
       
       const worker = html2pdf().set(opt).from(element)
