@@ -4,10 +4,13 @@ import React, { useRef, useState } from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { addFuncionario, toggleFuncionario, addTipoHidratacao, toggleTipoHidratacao, deleteChecklist } from '@/app/actions/admin'
+import { addFuncionario, toggleFuncionario, deleteFuncionario, updateFuncionario, addTipoHidratacao, toggleTipoHidratacao, deleteChecklist } from '@/app/actions/admin'
 import { toast } from 'react-toastify'
-import { Printer, Eye, Trash2, ClipboardList, Users, Droplets, Dog, Cat, Check, Minus } from 'lucide-react'
+import { Printer, Eye, Trash2, ClipboardList, Users, Droplets, Dog, Cat, Check, Minus, Search, Calendar, Edit2 } from 'lucide-react'
+import { useRouter, useSearchParams } from 'next/navigation'
 
 const panel = 'rounded-2xl border border-border bg-white'
 const sectionTitle = 'text-2xl font-bold tracking-tight'
@@ -52,8 +55,26 @@ export default function DashboardClient({
   initialFuncionarios: any[]
   initialTiposHidratacao: any[]
 }) {
+  const searchParams = useSearchParams()
+  const router = useRouter()
+  
+  const today = new Date()
+  const defaultDate = new Date(today.getTime() - (today.getTimezoneOffset() * 60000)).toISOString().split('T')[0]
+  
+  const [filterDate, setFilterDate] = useState(searchParams.get('date') || defaultDate)
+  const [filterSearch, setFilterSearch] = useState(searchParams.get('search') || '')
+
+  const applyFilters = () => {
+    const params = new URLSearchParams()
+    if (filterDate) params.set('date', filterDate)
+    if (filterSearch) params.set('search', filterSearch)
+    router.push(`/admin/dashboard?${params.toString()}`)
+  }
+
   const funcFormRef = useRef<HTMLFormElement>(null)
   const hidFormRef = useRef<HTMLFormElement>(null)
+
+  const [editingFuncionario, setEditingFuncionario] = useState<any>(null)
   const [selectedChecklist, setSelectedChecklist] = useState<any | null>(null)
   const [checklistToDelete, setChecklistToDelete] = useState<string | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
@@ -67,11 +88,35 @@ export default function DashboardClient({
       </TabsList>
 
       <TabsContent value="checklists" className="space-y-5">
-        <div className="flex items-baseline justify-between gap-4">
-          <h2 className={sectionTitle}>Últimos checklists</h2>
-          {initialChecklists.length > 0 && (
-            <span className="text-sm text-muted-foreground">{initialChecklists.length} mais recentes</span>
-          )}
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+          <div className="space-y-1">
+            <h2 className={sectionTitle}>Checklists</h2>
+            <p className="text-sm text-muted-foreground">Mostrando os resultados da busca</p>
+          </div>
+          
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+              <Input 
+                placeholder="Buscar pet ou tutor..." 
+                className="pl-9 bg-white"
+                value={filterSearch}
+                onChange={(e) => setFilterSearch(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && applyFilters()}
+              />
+            </div>
+            <div className="relative">
+              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+              <Input 
+                type="date" 
+                className="pl-9 bg-white"
+                value={filterDate}
+                onChange={(e) => setFilterDate(e.target.value)}
+                onBlur={applyFilters}
+              />
+            </div>
+            <Button onClick={applyFilters}>Filtrar</Button>
+          </div>
         </div>
         {initialChecklists.length === 0 ? (
           <div className={`${panel} px-6 py-14 text-center`}>
@@ -82,6 +127,12 @@ export default function DashboardClient({
           <ul className={`${panel} divide-y divide-border overflow-hidden`}>
             {initialChecklists.map((item) => {
               const SpeciesIcon = item.especie === 'Gato' ? Cat : Dog
+              const status = item.status || 'Aguardando'
+              const config = status === 'Aguardando' ? { color: 'text-amber-600', bg: 'bg-amber-100', border: 'border-amber-200' } :
+                             status === 'Em banho' ? { color: 'text-ceu-deep', bg: 'bg-ceu/20', border: 'border-ceu' } :
+                             status === 'Finalizado' ? { color: 'text-green-600', bg: 'bg-green-100', border: 'border-green-200' } :
+                             { color: 'text-gray-600', bg: 'bg-gray-100', border: 'border-gray-200' }
+
               return (
                 <li key={item.id} className="flex flex-col gap-4 px-4 py-4 sm:flex-row sm:items-center md:px-6">
                   <div className="flex min-w-0 flex-1 items-center gap-4">
@@ -89,7 +140,12 @@ export default function DashboardClient({
                       <SpeciesIcon className="size-6" aria-label={item.especie} />
                     </span>
                     <div className="min-w-0">
-                      <p className="truncate font-heading text-lg leading-tight font-bold">{item.pet_nome}</p>
+                      <div className="flex items-center gap-2 mb-1">
+                        <p className="truncate font-heading text-lg leading-tight font-bold">{item.pet_nome}</p>
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${config.bg} ${config.color} ${config.border}`}>
+                          {status}
+                        </span>
+                      </div>
                       <p className="truncate text-sm text-muted-foreground">{item.raca}, de {item.tutor}</p>
                     </div>
                   </div>
@@ -132,21 +188,45 @@ export default function DashboardClient({
             toast.success('Funcionário cadastrado!')
             funcFormRef.current?.reset()
           }
-        }} className={addForm}>
-          <Input name="nome" aria-label="Nome do funcionário" placeholder="Nome do funcionário" required className="h-12 flex-1" />
-          <Input name="cargo" aria-label="Cargo" placeholder="Cargo (Ex: Banhista, Tosador)" required className="h-12 flex-1" />
-          <Button type="submit" className="h-12 rounded-xl px-6 text-base">Cadastrar</Button>
+        }} className={`${addForm} flex-col`}>
+          <div className="flex flex-col sm:flex-row gap-3 w-full">
+            <Input name="nome" aria-label="Nome do funcionário" placeholder="Nome do funcionário" required className="h-12 flex-1" />
+            <Input name="cargo" aria-label="Cargo" placeholder="Cargo (Ex: Banhista, Tosador)" required className="h-12 flex-1" />
+            <div className="flex-1">
+              <Select name="role" required>
+                <SelectTrigger className="h-12 data-[size=default]:h-12 w-full text-base bg-white" aria-label="Nível de Acesso">
+                  <SelectValue placeholder="Nível de Acesso" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="recepcao">Recepção</SelectItem>
+                  <SelectItem value="operacional">Operacional</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-3 w-full">
+            <Input name="login" aria-label="Login (Usuário)" placeholder="Nome de usuário para login" required className="h-12 flex-1" />
+            <Input type="password" name="senha" aria-label="Senha" placeholder="Senha" required className="h-12 flex-1" />
+            <Button type="submit" className="h-12 rounded-xl px-6 text-base sm:w-auto w-full">Cadastrar</Button>
+          </div>
         </form>
 
         {initialFuncionarios.length > 0 && (
           <ul className={`${panel} divide-y divide-border`}>
             {initialFuncionarios.map((func) => (
               <li key={func.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 md:px-6">
-                <div className="flex min-w-0 items-center gap-3">
-                  <span className="font-semibold">{func.nome}</span>
-                  <span className="rounded-full bg-muted px-2.5 py-0.5 text-sm text-muted-foreground">{func.cargo}</span>
+                <div className="flex flex-col min-w-0 gap-1">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <span className="font-semibold">{func.nome}</span>
+                    <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs text-muted-foreground">{func.cargo}</span>
+                  </div>
+                  {func.login && (
+                    <span className="text-xs text-muted-foreground font-mono bg-muted/30 px-2 py-0.5 rounded w-fit">
+                      login: {func.login}
+                    </span>
+                  )}
                 </div>
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2 sm:gap-4">
                   <StatusPill ativo={func.ativo} />
                   <Button
                     variant={func.ativo ? 'outline' : 'default'}
@@ -155,11 +235,105 @@ export default function DashboardClient({
                   >
                     {func.ativo ? 'Desativar' : 'Ativar'}
                   </Button>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-9 w-9 rounded-lg"
+                    onClick={() => setEditingFuncionario(func)}
+                    aria-label="Editar"
+                  >
+                    <Edit2 className="size-4" />
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="icon"
+                    className="h-9 w-9 rounded-lg"
+                    onClick={async () => {
+                      if (confirm('Tem certeza que deseja excluir este usuário?')) {
+                        const res = await deleteFuncionario(func.id)
+                        if (!res.success) {
+                          toast.error(res.message)
+                        } else {
+                          toast.success('Usuário excluído!')
+                        }
+                      }
+                    }}
+                    aria-label="Excluir"
+                  >
+                    <Trash2 className="size-4" />
+                  </Button>
                 </div>
               </li>
             ))}
           </ul>
         )}
+
+
+        {/* Modal de Edição de Funcionário */}
+        <Dialog open={!!editingFuncionario} onOpenChange={(open) => !open && setEditingFuncionario(null)}>
+          <DialogContent className="sm:max-w-xl">
+            <DialogHeader>
+              <DialogTitle>Editar Funcionário</DialogTitle>
+            </DialogHeader>
+            {editingFuncionario && (
+              <form action={async (formData) => {
+                const res = await updateFuncionario(formData)
+                if (!res.success) {
+                  toast.error(res.message)
+                } else {
+                  toast.success('Funcionário atualizado!')
+                  setEditingFuncionario(null)
+                }
+              }} className="space-y-4 pt-4">
+                <input type="hidden" name="id" value={editingFuncionario.id} />
+                
+                <div className="flex flex-col gap-3">
+                  <Label>Nome do funcionário</Label>
+                  <Input name="nome" defaultValue={editingFuncionario.nome} required className="h-12" />
+                </div>
+                
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <div className="flex-1 flex flex-col gap-3">
+                    <Label>Cargo (Ex: Banhista, Tosador)</Label>
+                    <Input name="cargo" defaultValue={editingFuncionario.cargo} required className="h-12" />
+                  </div>
+                  <div className="flex-1 flex flex-col gap-3">
+                    <Label>Nível de Acesso</Label>
+                    <Select name="role" defaultValue={editingFuncionario.role || 'operacional'} required>
+                      <SelectTrigger className="h-12 data-[size=default]:h-12 w-full text-base bg-white">
+                        <SelectValue placeholder="Nível de Acesso" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="recepcao">Recepção</SelectItem>
+                        <SelectItem value="operacional">Operacional</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <div className="flex-1 flex flex-col gap-3">
+                    <Label>Login (Usuário)</Label>
+                    <Input name="login" defaultValue={editingFuncionario.login} required className="h-12" />
+                  </div>
+                  <div className="flex-1 flex flex-col gap-3">
+                    <Label>Nova Senha (Opcional)</Label>
+                    <Input type="password" name="senha" placeholder="Deixe em branco para não alterar" className="h-12" />
+                  </div>
+                </div>
+
+                <div className="pt-4 flex justify-end gap-3">
+                  <Button type="button" variant="outline" onClick={() => setEditingFuncionario(null)} className="h-12 px-6">
+                    Cancelar
+                  </Button>
+                  <Button type="submit" className="h-12 px-6">
+                    Salvar Alterações
+                  </Button>
+                </div>
+              </form>
+            )}
+          </DialogContent>
+        </Dialog>
       </TabsContent>
 
       <TabsContent value="hidratacao" className="space-y-5">

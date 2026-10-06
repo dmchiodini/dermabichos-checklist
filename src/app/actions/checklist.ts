@@ -20,8 +20,9 @@ export async function submitChecklist(data: ChecklistFormValues, fotosFormData: 
     const filesToCleanup: string[] = []
 
     // 1. Upload Assinatura (Base64 -> Buffer -> Supabase Storage)
+    // 1. Upload Assinatura (Base64 -> Buffer -> Supabase Storage)
     let assinatura_url = null
-    if (data.assinatura) {
+    if (data.assinatura && data.assinatura.startsWith('data:image')) {
       // Remover o prefixo data:image/png;base64,
       const base64Data = data.assinatura.replace(/^data:image\/\w+;base64,/, '')
       const buffer = Buffer.from(base64Data, 'base64')
@@ -81,41 +82,54 @@ export async function submitChecklist(data: ChecklistFormValues, fotosFormData: 
     }
 
     // 3. Salvar no Banco de Dados
-    // Como os enums detalhados vem do Zod form values
-    const insertData = {
+
+    const payload: any = {
       pet_nome: data.pet_nome,
       especie: data.especie,
       raca: data.raca,
       tutor: data.tutor,
       detalhes: {
-        laco: data.detalhes.laco,
-        brilho: data.detalhes.brilho,
-        perfume: data.detalhes.perfume,
-        escova_dente: data.detalhes.escova_dente,
-        outros: data.detalhes.outros || ''
+        laco: data.detalhes?.laco || false,
+        brilho: data.detalhes?.brilho || false,
+        perfume: data.detalhes?.perfume || false,
+        escova_dente: data.detalhes?.escova_dente || false,
+        outros: data.detalhes?.outros || ''
       },
       tosa: {
-        higienica: data.tosa.higienica,
-        maquina: data.tosa.maquina,
-        tesoura: data.tosa.tesoura
+        higienica: data.tosa?.higienica || false,
+        maquina: data.tosa?.maquina || false,
+        tesoura: data.tosa?.tesoura || false
       },
       hidratacao: {
-        padrao: data.hidratacao.padrao,
-        hipoalergenico: data.hidratacao.hipoalergenico,
-        qual: data.hidratacao.qual || ''
+        padrao: data.hidratacao?.padrao || false,
+        hipoalergenico: data.hidratacao?.hipoalergenico || false,
+        qual: data.hidratacao?.qual || ''
       },
       observacao: data.observacao || null,
-      realizado_por_id: data.realizado_por_id,
-      vistoriado_por_id: data.vistoriado_por_id,
-      termo_aceito: data.termo_aceito,
-      assinatura_url: assinatura_url,
-      foto_1_url: fotoUrls[0] || null,
-      foto_2_url: fotoUrls[1] || null
+      realizado_por_id: data.realizado_por_id || null,
+      vistoriado_por_id: data.vistoriado_por_id || null,
+      termo_aceito: data.termo_aceito || false,
     }
 
-    const { error: dbError } = await supabase
-      .from('checklists')
-      .insert(insertData)
+    if (assinatura_url) payload.assinatura_url = assinatura_url
+    if (fotoUrls[0]) payload.foto_1_url = fotoUrls[0]
+    if (fotoUrls[1]) payload.foto_2_url = fotoUrls[1]
+
+    let dbError = null
+
+    if (data.id) {
+      const { error } = await supabase
+        .from('checklists')
+        .update(payload)
+        .eq('id', data.id)
+      dbError = error
+    } else {
+      payload.status = 'Aguardando'
+      const { error } = await supabase
+        .from('checklists')
+        .insert(payload)
+      dbError = error
+    }
 
     if (dbError) {
       console.error('Erro ao salvar no banco:', dbError)
@@ -131,4 +145,48 @@ export async function submitChecklist(data: ChecklistFormValues, fotosFormData: 
     console.error('Erro na submissão do checklist:', error)
     return { success: false, message: error.message || 'Erro interno no servidor' }
   }
+}
+
+export async function updateChecklistStatus(id: string, status: string) {
+  try {
+    const supabase = await createClient()
+    const { error } = await supabase
+      .from('checklists')
+      .update({ status })
+      .eq('id', id)
+
+    if (error) throw error
+    return { success: true }
+  } catch (error: any) {
+    console.error('Erro ao atualizar status:', error)
+    return { success: false, message: error.message }
+  }
+}
+
+export async function getActiveChecklists(funcionario?: { id: string, cargo: string, role?: string }) {
+  const supabase = await createClient()
+
+  const today = new Date()
+  const localDateStr = new Date(today.getTime() - (today.getTimezoneOffset() * 60000)).toISOString().split('T')[0]
+  const [year, month, day] = localDateStr.split('-').map(Number)
+  const startDate = new Date(year, month - 1, day, 0, 0, 0, 0).toISOString()
+  
+  let query = supabase
+    .from('checklists')
+    .select('*')
+    .gte('created_at', startDate)
+    .order('created_at', { ascending: false })
+    
+  // Se for operacional (não é recepção nem admin), só vê os próprios
+  if (funcionario && funcionario.role !== 'recepcao' && funcionario.cargo?.toLowerCase() !== 'recepção' && funcionario.cargo?.toLowerCase() !== 'recepcao') {
+    query = query.eq('realizado_por_id', funcionario.id)
+  }
+    
+  const { data, error } = await query
+    
+  if (error) {
+    console.error('Erro ao buscar checklists ativos:', error)
+    return []
+  }
+  return data
 }

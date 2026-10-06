@@ -14,6 +14,9 @@ export interface Database {
           id: string
           nome: string
           cargo: string
+          role?: string | null
+          login?: string | null
+          senha?: string | null
           ativo: boolean
           created_at: string
         }
@@ -21,6 +24,9 @@ export interface Database {
           id?: string
           nome: string
           cargo: string
+          role?: string | null
+          login?: string | null
+          senha?: string | null
           ativo?: boolean
           created_at?: string
         }
@@ -28,6 +34,9 @@ export interface Database {
           id?: string
           nome?: string
           cargo?: string
+          role?: string | null
+          login?: string | null
+          senha?: string | null
           ativo?: boolean
           created_at?: string
         }
@@ -86,6 +95,7 @@ export interface Database {
           assinatura_url: string | null
           foto_1_url: string | null
           foto_2_url: string | null
+          status: string
           created_at: string
         }
         Insert: {
@@ -119,6 +129,7 @@ export interface Database {
           assinatura_url?: string | null
           foto_1_url?: string | null
           foto_2_url?: string | null
+          status?: string
           created_at?: string
         }
         Update: {
@@ -152,6 +163,7 @@ export interface Database {
           assinatura_url?: string | null
           foto_1_url?: string | null
           foto_2_url?: string | null
+          status?: string
           created_at?: string
         }
         Relationships: [

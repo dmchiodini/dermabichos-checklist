@@ -8,14 +8,34 @@ import DashboardClient from './DashboardClient'
 
 export const dynamic = 'force-dynamic' // Ensure it always fetches fresh data
 
-export default async function DashboardPage() {
+export default async function DashboardPage(props: { searchParams: Promise<{ date?: string, search?: string }> }) {
+  const searchParams = await props.searchParams;
   const supabase = await createClient()
 
-  const { data: checklists } = await supabase
+  // Calculate today's date correctly adjusting for local timezone
+  const today = new Date()
+  const localDateStr = new Date(today.getTime() - (today.getTimezoneOffset() * 60000)).toISOString().split('T')[0]
+  
+  const dateFilter = searchParams.date || localDateStr
+  const searchFilter = searchParams.search || ''
+
+  // Parse YYYY-MM-DD reliably in local time
+  const [year, month, day] = dateFilter.split('-').map(Number)
+  const startDate = new Date(year, month - 1, day, 0, 0, 0, 0)
+  const endDate = new Date(year, month - 1, day, 23, 59, 59, 999)
+
+  let query = supabase
     .from('checklists')
     .select('*')
+    .gte('created_at', startDate.toISOString())
+    .lte('created_at', endDate.toISOString())
     .order('created_at', { ascending: false })
-    .limit(50)
+
+  if (searchFilter) {
+    query = query.or(`pet_nome.ilike.%${searchFilter}%,tutor.ilike.%${searchFilter}%`)
+  }
+
+  const { data: checklists } = await query
 
   const { data: funcionarios } = await supabase
     .from('funcionarios')
