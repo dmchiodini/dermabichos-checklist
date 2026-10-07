@@ -4,18 +4,34 @@ import React, { useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Plus, Clock, Play, CheckCircle2, ChevronRight, ShowerHead, Share2 } from 'lucide-react'
+import { Plus, Clock, Play, CheckCircle2, ChevronRight, ShowerHead, Share2, Search, Calendar } from 'lucide-react'
 import { toast } from 'react-toastify'
-import { updateChecklistStatus } from '@/app/actions/checklist'
+import { updateChecklistStatus, getFilteredChecklists } from '@/app/actions/checklist'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import { logoutFuncionario } from '@/app/actions/auth'
 
 export default function FilaClient({ initialChecklists, user }: { initialChecklists: any[], user: any }) {
+  const [filterSearch, setFilterSearch] = useState('')
+  const [filterDate, setFilterDate] = useState(() => {
+    const today = new Date()
+    return new Date(today.getTime() - (today.getTimezoneOffset() * 60000)).toISOString().split('T')[0]
+  })
+
   const [checklists, setChecklists] = useState(initialChecklists)
   const router = useRouter()
   
   const isRecepcao = user.role === 'recepcao' || user.cargo?.toLowerCase() === 'recepção' || user.cargo?.toLowerCase() === 'recepcao'
+
+  const applyFilters = async () => {
+    const data = await getFilteredChecklists(user, filterDate, filterSearch)
+    setChecklists(data)
+  }
+
+  React.useEffect(() => {
+    applyFilters()
+  }, [filterDate])
 
   const handleStatusChange = async (id: string, newStatus: string) => {
     try {
@@ -58,7 +74,7 @@ export default function FilaClient({ initialChecklists, user }: { initialCheckli
       <div className="relative mx-auto max-w-5xl">
         
         {/* Header */}
-        <header className="flex flex-col md:flex-row items-center justify-between gap-5 mb-8">
+        <header className="flex flex-col md:flex-row items-start md:items-center justify-between gap-5 mb-8">
           <div className="flex items-center gap-5">
             <Image
               src="/dermabichos-logo.svg"
@@ -75,21 +91,58 @@ export default function FilaClient({ initialChecklists, user }: { initialCheckli
                 </h1>
                 <span className="bg-ceu/10 text-ceu-deep px-2 py-0.5 rounded-full text-xs font-bold border border-ceu/20">{user.nome} ({user.cargo})</span>
               </div>
-              <p className="mt-1 text-base text-muted-foreground flex items-center gap-4">
-                <span>Hoje: {agendamentosHoje} pets ({finalizados} finalizados)</span>
-                <button onClick={() => logoutFuncionario()} className="text-sm underline hover:text-foreground">Sair da conta</button>
+              <p className="mt-1 text-sm text-muted-foreground flex items-center gap-4">
+                <button onClick={() => logoutFuncionario()} className="underline hover:text-foreground">Sair da conta</button>
               </p>
             </div>
           </div>
-          {isRecepcao && (
-            <Link href="/checklist">
-              <Button className="h-14 rounded-2xl text-lg font-bold shadow-[0_4px_0_-1px_var(--ceu-deep)] hover:bg-ceu/90 px-6 gap-2">
-                <Plus className="size-5" />
-                Novo Checklist
-              </Button>
-            </Link>
-          )}
+          
+          <div className="flex flex-col md:items-end gap-3 w-full md:w-auto">
+            {isRecepcao && (
+              <Link href="/checklist">
+                <Button className="h-12 md:h-14 w-full md:w-auto rounded-2xl text-base md:text-lg font-bold shadow-[0_4px_0_-1px_var(--ceu-deep)] hover:bg-ceu/90 px-6 gap-2">
+                  <Plus className="size-5" />
+                  Novo Checklist
+                </Button>
+              </Link>
+            )}
+            
+            <div className="flex items-center gap-4 bg-white px-4 py-2 rounded-2xl border shadow-sm">
+              <div className="text-center">
+                <p className="text-2xl font-black text-ceu-deep leading-none">{initialChecklists.length}</p>
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Banhos Hoje</p>
+              </div>
+              <div className="w-px h-8 bg-border"></div>
+              <div className="text-center">
+                <p className="text-2xl font-black text-green-600 leading-none">{initialChecklists.filter(c => c.status === 'Finalizado').length}</p>
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Finalizados Hoje</p>
+              </div>
+            </div>
+          </div>
         </header>
+
+        {/* Filtros */}
+        <div className="flex flex-col md:flex-row gap-3 mb-6">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+            <Input 
+              placeholder="Buscar pet ou tutor..." 
+              className="pl-9 h-12 bg-white rounded-xl"
+              value={filterSearch}
+              onChange={(e) => setFilterSearch(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && applyFilters()}
+            />
+          </div>
+          <div className="relative md:w-48 shrink-0">
+            <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+            <Input 
+              type="date" 
+              className="pl-9 h-12 bg-white rounded-xl"
+              value={filterDate}
+              onChange={(e) => setFilterDate(e.target.value)}
+            />
+          </div>
+        </div>
 
         {/* Lista de Checklists */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

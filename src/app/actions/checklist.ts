@@ -190,3 +190,47 @@ export async function getActiveChecklists(funcionario?: { id: string, cargo: str
   }
   return data
 }
+
+export async function getFilteredChecklists(
+  funcionario?: { id: string, cargo: string, role?: string },
+  dateFilter?: string,
+  searchFilter?: string
+) {
+  const supabase = await createClient()
+
+  let query = supabase
+    .from('checklists')
+    .select('*')
+    .order('created_at', { ascending: false })
+
+  if (dateFilter) {
+    // Se tem data, pega do inicio do dia ate o final
+    const [year, month, day] = dateFilter.split('-').map(Number)
+    const startDate = new Date(year, month - 1, day, 0, 0, 0, 0).toISOString()
+    const endDate = new Date(year, month - 1, day, 23, 59, 59, 999).toISOString()
+    query = query.gte('created_at', startDate).lte('created_at', endDate)
+  } else {
+    // Se não tem data (ex: inicializou), pega de hoje
+    const today = new Date()
+    const localDateStr = new Date(today.getTime() - (today.getTimezoneOffset() * 60000)).toISOString().split('T')[0]
+    const [year, month, day] = localDateStr.split('-').map(Number)
+    const startDate = new Date(year, month - 1, day, 0, 0, 0, 0).toISOString()
+    query = query.gte('created_at', startDate)
+  }
+
+  if (searchFilter) {
+    query = query.or(`pet_nome.ilike.%${searchFilter}%,tutor.ilike.%${searchFilter}%`)
+  }
+
+  if (funcionario && funcionario.role !== 'recepcao' && funcionario.cargo?.toLowerCase() !== 'recepção' && funcionario.cargo?.toLowerCase() !== 'recepcao') {
+    query = query.eq('realizado_por_id', funcionario.id)
+  }
+
+  const { data, error } = await query
+
+  if (error) {
+    console.error('Erro ao filtrar checklists:', error)
+    return []
+  }
+  return data
+}
