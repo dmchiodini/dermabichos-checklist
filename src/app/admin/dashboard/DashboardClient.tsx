@@ -492,7 +492,7 @@ export default function DashboardClient({
               <Button 
                 variant="outline" 
                 size="icon" 
-                className="absolute top-2 right-2 sm:-top-4 sm:-right-4 size-10 rounded-full bg-white shadow-md hover:bg-gray-100"
+                className="absolute top-3 right-3 size-10 rounded-full bg-white/80 backdrop-blur-sm shadow-md hover:bg-white"
                 onClick={() => setPhotoPreviewUrl(null)}
               >
                 <span className="font-heading text-xl">×</span>
