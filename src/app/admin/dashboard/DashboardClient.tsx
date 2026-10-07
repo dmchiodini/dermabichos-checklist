@@ -484,15 +484,15 @@ export default function DashboardClient({
 
       {/* Photo Preview Modal */}
       <Dialog open={!!photoPreviewUrl} onOpenChange={(open) => !open && setPhotoPreviewUrl(null)}>
-        <DialogContent className="max-w-4xl border-none bg-transparent p-0 shadow-none">
+        <DialogContent showCloseButton={false} className="max-w-[calc(100%-2rem)] sm:max-w-4xl border-none bg-transparent p-0 shadow-none">
           {photoPreviewUrl && (
-            <div className="relative flex items-center justify-center">
+            <div className="relative flex w-full flex-col items-center justify-center">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={photoPreviewUrl} alt="Foto ampliada" className="max-h-[85vh] w-auto max-w-[95vw] rounded-2xl object-contain shadow-2xl" />
+              <img src={photoPreviewUrl} alt="Foto ampliada" className="max-h-[85vh] w-auto max-w-full rounded-2xl object-contain shadow-2xl" />
               <Button 
                 variant="outline" 
                 size="icon" 
-                className="absolute -top-4 -right-4 size-10 rounded-full bg-white shadow-md hover:bg-gray-100"
+                className="absolute top-2 right-2 sm:-top-4 sm:-right-4 size-10 rounded-full bg-white shadow-md hover:bg-gray-100"
                 onClick={() => setPhotoPreviewUrl(null)}
               >
                 <span className="font-heading text-xl">×</span>
