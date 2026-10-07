@@ -303,7 +303,7 @@ export default function TabletClient({ user, isRecepcao = true }: { user?: any, 
           )}
           <div className="min-w-0 pr-10">
             <h1 className="text-2xl font-extrabold leading-tight tracking-tight md:text-[2rem]">
-              Checklist de banho e tosa
+              Checklist Estética Animal
             </h1>
             <p className="mt-1 text-base text-muted-foreground">
               {isRecepcao ? 'Preencha na recepção, junto com o tutor, antes do pet entrar para o banho.' : 'Modo de visualização (apenas recepção pode editar).'}
