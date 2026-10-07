@@ -80,7 +80,7 @@ export default function DashboardClient({
   const [photoPreviewUrl, setPhotoPreviewUrl] = useState<string | null>(null)
   const [editPhotoUrl, setEditPhotoUrl] = useState<string | null>(null)
   const [addPhotoName, setAddPhotoName] = useState<string>('')
-  const [currentTab, setCurrentTab] = useState(defaultTab)
+  const [currentTab, setCurrentTab] = useState('checklists')
   const [isDeleting, setIsDeleting] = useState(false)
 
   return (
