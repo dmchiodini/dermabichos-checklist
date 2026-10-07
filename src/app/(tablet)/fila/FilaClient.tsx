@@ -106,24 +106,12 @@ export default function FilaClient({ initialChecklists, user }: { initialCheckli
                 </Button>
               </Link>
             )}
-            
-            <div className="flex items-center gap-4 bg-white px-4 py-2 rounded-2xl border shadow-sm">
-              <div className="text-center">
-                <p className="text-2xl font-black text-ceu-deep leading-none">{checklists.length}</p>
-                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Banhos</p>
-              </div>
-              <div className="w-px h-8 bg-border"></div>
-              <div className="text-center">
-                <p className="text-2xl font-black text-green-600 leading-none">{checklists.filter(c => c.status === 'Finalizado').length}</p>
-                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Finalizados</p>
-              </div>
-            </div>
           </div>
         </header>
 
-        {/* Filtros */}
-        <div className="flex flex-col md:flex-row gap-3 mb-6">
-          <div className="relative flex-1">
+        {/* Filtros e Stats */}
+        <div className="flex flex-col md:flex-row items-center gap-3 mb-6">
+          <div className="relative w-full md:w-[300px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
             <Input 
               placeholder="Buscar pet ou tutor..." 
@@ -133,7 +121,8 @@ export default function FilaClient({ initialChecklists, user }: { initialCheckli
               onKeyDown={(e) => e.key === 'Enter' && applyFilters()}
             />
           </div>
-          <div className="relative md:w-48 shrink-0">
+          
+          <div className="relative w-full md:w-48 shrink-0">
             <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
             <Input 
               type="date" 
@@ -141,6 +130,18 @@ export default function FilaClient({ initialChecklists, user }: { initialCheckli
               value={filterDate}
               onChange={(e) => setFilterDate(e.target.value)}
             />
+          </div>
+
+          <div className="flex items-center gap-4 bg-white px-5 h-12 rounded-xl border shadow-sm w-full md:w-auto md:ml-auto justify-center">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Banhos:</span>
+              <span className="text-lg font-black text-ceu-deep">{checklists.length}</span>
+            </div>
+            <div className="w-px h-5 bg-border"></div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Finalizados:</span>
+              <span className="text-lg font-black text-green-600">{checklists.filter(c => c.status === 'Finalizado').length}</span>
+            </div>
           </div>
         </div>
 
