@@ -74,7 +74,7 @@ const serviceGroups = [
 
 const fieldLabel = 'text-base font-semibold text-foreground'
 const fieldError = 'text-sm font-medium text-destructive'
-const selectTrigger = 'h-14 w-full text-base bg-white'
+const selectTrigger = 'h-14 data-[size=default]:h-14 w-full text-base bg-white'
 
 function StepHeading({ step, title, hint }: { step: number; title: string; hint?: string }) {
   return (
@@ -363,7 +363,7 @@ export default function TabletClient({ user, isRecepcao = true }: { user?: any, 
                         </PopoverTrigger>
                         <PopoverContent className="w-(--anchor-width) p-0" align="start">
                           <Command>
-                            <CommandInput placeholder="Buscar raça..." className="h-12 text-base" />
+                            <CommandInput placeholder="Buscar raça..." className="h-14 text-base" />
                             <CommandList>
                               <CommandEmpty>Nenhuma raça encontrada.</CommandEmpty>
                               <CommandGroup>

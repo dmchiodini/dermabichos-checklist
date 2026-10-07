@@ -192,11 +192,11 @@ export default function DashboardClient({
           }
         }} className={`${addForm} flex-col`}>
           <div className="flex flex-col sm:flex-row gap-3 w-full">
-            <Input name="nome" aria-label="Nome do funcionário" placeholder="Nome do funcionário" required className="h-12 flex-1" />
-            <Input name="cargo" aria-label="Cargo" placeholder="Cargo (Ex: Banhista, Tosador)" required className="h-12 flex-1" />
+            <Input name="nome" aria-label="Nome do funcionário" placeholder="Nome do funcionário" required className="h-14 flex-1" />
+            <Input name="cargo" aria-label="Cargo" placeholder="Cargo (Ex: Banhista, Tosador)" required className="h-14 flex-1" />
             <div className="flex-1">
               <Select name="role" required>
-                <SelectTrigger className="h-12 data-[size=default]:h-12 w-full text-base bg-white" aria-label="Nível de Acesso">
+                <SelectTrigger className="h-14 data-[size=default]:h-14 w-full text-base bg-white" aria-label="Nível de Acesso">
                   <SelectValue placeholder="Nível de Acesso" />
                 </SelectTrigger>
                 <SelectContent>
@@ -207,9 +207,9 @@ export default function DashboardClient({
             </div>
           </div>
           <div className="flex flex-col sm:flex-row gap-3 w-full">
-            <Input name="login" aria-label="Login (Usuário)" placeholder="Nome de usuário para login" required className="h-12 flex-1" />
-            <Input type="password" name="senha" aria-label="Senha" placeholder="Senha" required className="h-12 flex-1" />
-            <Button type="submit" className="h-12 rounded-xl px-6 text-base sm:w-auto w-full">Cadastrar</Button>
+            <Input name="login" aria-label="Login (Usuário)" placeholder="Nome de usuário para login" required className="h-14 flex-1" />
+            <Input type="password" name="senha" aria-label="Senha" placeholder="Senha" required className="h-14 flex-1" />
+            <Button type="submit" className="h-14 rounded-xl px-6 text-base sm:w-auto w-full">Cadastrar</Button>
           </div>
         </form>
 
