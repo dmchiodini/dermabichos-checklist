@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { addFuncionario, toggleFuncionario, deleteFuncionario, updateFuncionario, addTipoHidratacao, toggleTipoHidratacao, deleteChecklist } from '@/app/actions/admin'
 import { toast } from 'react-toastify'
-import { Printer, Eye, Trash2, ClipboardList, Users, Droplets, Dog, Cat, Check, Minus, Search, Calendar, Edit2 } from 'lucide-react'
+import { Printer, Eye, Trash2, ClipboardList, Users, Droplets, Dog, Cat, Check, Minus, Search, Calendar, Edit2, User } from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
 
 const panel = 'rounded-2xl border border-border bg-white'
@@ -209,6 +209,7 @@ export default function DashboardClient({
           <div className="flex flex-col sm:flex-row gap-3 w-full">
             <Input name="login" aria-label="Login (Usuário)" placeholder="Nome de usuário para login" required className="h-14 flex-1" />
             <Input type="password" name="senha" aria-label="Senha" placeholder="Senha" required className="h-14 flex-1" />
+            <Input type="file" name="foto" accept="image/*" aria-label="Foto (Opcional)" className="h-14 flex-1 pt-3.5 text-muted-foreground file:mr-4 file:py-1 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-ceu/10 file:text-ceu-deep hover:file:bg-ceu/20" />
             <Button type="submit" className="h-14 rounded-xl px-6 text-base sm:w-auto w-full">Cadastrar</Button>
           </div>
         </form>
@@ -219,7 +220,15 @@ export default function DashboardClient({
               <li key={func.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 md:px-6">
                 <div className="flex flex-col min-w-0 gap-1">
                   <div className="flex min-w-0 items-center gap-3">
-                    <span className="font-semibold">{func.nome}</span>
+                    {func.foto_url ? (
+                      /* eslint-disable-next-line @next/next/no-img-element */
+                      <img src={func.foto_url} alt={func.nome} className="size-10 rounded-full object-cover shrink-0 ring-2 ring-white shadow-sm" />
+                    ) : (
+                      <div className="size-10 rounded-full bg-muted flex items-center justify-center shrink-0 ring-2 ring-white shadow-sm">
+                        <User className="size-5 text-muted-foreground" />
+                      </div>
+                    )}
+                    <span className="font-semibold text-lg">{func.nome}</span>
                     <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs text-muted-foreground">{func.cargo}</span>
                   </div>
                   {func.login && (
@@ -321,6 +330,10 @@ export default function DashboardClient({
                   <div className="flex-1 flex flex-col gap-3">
                     <Label>Nova Senha (Opcional)</Label>
                     <Input type="password" name="senha" placeholder="Deixe em branco para não alterar" className="h-14" />
+                  </div>
+                  <div className="flex-1 flex flex-col gap-3">
+                    <Label>Foto (Opcional)</Label>
+                    <Input type="file" name="foto" accept="image/*" className="h-14 pt-3.5 text-muted-foreground file:mr-4 file:py-1 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-ceu/10 file:text-ceu-deep hover:file:bg-ceu/20" />
                   </div>
                 </div>
 

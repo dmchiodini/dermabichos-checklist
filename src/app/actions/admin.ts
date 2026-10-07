@@ -9,11 +9,30 @@ export async function addFuncionario(formData: FormData) {
   const role = formData.get('role') as string
   const login = formData.get('login') as string
   const senha = formData.get('senha') as string
+  const foto = formData.get('foto') as File | null
 
-  if (!nome || !cargo || !role || !login || !senha) return { success: false, message: 'Preencha todos os campos' }
+  if (!nome || !cargo || !role || !login || !senha) return { success: false, message: 'Preencha todos os campos obrigatórios' }
 
   const supabase = await createClient()
-  const { error } = await supabase.from('funcionarios').insert({ nome, cargo, role, login, senha, ativo: true })
+
+  let foto_url = null
+  if (foto && foto.size > 0) {
+    const fileExt = foto.name.split('.').pop()
+    const fileName = `funcionarios/${crypto.randomUUID()}.${fileExt}`
+    const arrayBuffer = await foto.arrayBuffer()
+    const buffer = Buffer.from(arrayBuffer)
+
+    const { error: uploadError } = await supabase.storage
+      .from('checklists')
+      .upload(fileName, buffer, { contentType: foto.type, upsert: false })
+
+    if (!uploadError) {
+      const { data: publicUrlData } = supabase.storage.from('checklists').getPublicUrl(fileName)
+      foto_url = publicUrlData.publicUrl
+    }
+  }
+
+  const { error } = await supabase.from('funcionarios').insert({ nome, cargo, role, login, senha, ativo: true, foto_url })
   
   if (error) return { success: false, message: error.message }
   
@@ -47,6 +66,7 @@ export async function updateFuncionario(formData: FormData) {
   const role = formData.get('role') as string
   const login = formData.get('login') as string
   const senha = formData.get('senha') as string
+  const foto = formData.get('foto') as File | null
 
   if (!id || !nome || !cargo || !role || !login) return { success: false, message: 'Preencha os campos obrigatórios' }
 
@@ -55,6 +75,22 @@ export async function updateFuncionario(formData: FormData) {
   const updateData: any = { nome, cargo, role, login }
   if (senha && senha.trim() !== '') {
     updateData.senha = senha
+  }
+
+  if (foto && foto.size > 0) {
+    const fileExt = foto.name.split('.').pop()
+    const fileName = `funcionarios/${crypto.randomUUID()}.${fileExt}`
+    const arrayBuffer = await foto.arrayBuffer()
+    const buffer = Buffer.from(arrayBuffer)
+
+    const { error: uploadError } = await supabase.storage
+      .from('checklists')
+      .upload(fileName, buffer, { contentType: foto.type, upsert: false })
+
+    if (!uploadError) {
+      const { data: publicUrlData } = supabase.storage.from('checklists').getPublicUrl(fileName)
+      updateData.foto_url = publicUrlData.publicUrl
+    }
   }
 
   const { error } = await supabase.from('funcionarios').update(updateData).eq('id', id)
