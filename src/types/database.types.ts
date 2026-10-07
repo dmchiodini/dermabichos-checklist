@@ -17,6 +17,7 @@ export interface Database {
           role?: string | null
           login?: string | null
           senha?: string | null
+          foto_url?: string | null
           ativo: boolean
           created_at: string
         }
@@ -27,6 +28,7 @@ export interface Database {
           role?: string | null
           login?: string | null
           senha?: string | null
+          foto_url?: string | null
           ativo?: boolean
           created_at?: string
         }
@@ -37,6 +39,7 @@ export interface Database {
           role?: string | null
           login?: string | null
           senha?: string | null
+          foto_url?: string | null
           ativo?: boolean
           created_at?: string
         }
