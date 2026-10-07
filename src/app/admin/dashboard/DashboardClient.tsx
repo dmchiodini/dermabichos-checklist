@@ -79,7 +79,6 @@ export default function DashboardClient({
   const [checklistToDelete, setChecklistToDelete] = useState<string | null>(null)
   const [photoPreviewUrl, setPhotoPreviewUrl] = useState<string | null>(null)
   const [editPhotoUrl, setEditPhotoUrl] = useState<string | null>(null)
-  const [addPhotoName, setAddPhotoName] = useState<string>('')
   const [currentTab, setCurrentTab] = useState('checklists')
   const [isDeleting, setIsDeleting] = useState(false)
 
@@ -192,7 +191,6 @@ export default function DashboardClient({
           } else {
             toast.success('Funcionário cadastrado!')
             funcFormRef.current?.reset()
-            setAddPhotoName('')
           }
         }} className={`${addForm} flex-col`}>
           <div className="flex flex-col sm:flex-row gap-3 w-full">
@@ -210,6 +208,7 @@ export default function DashboardClient({
               </Select>
             </div>
           </div>
+          <div className="flex flex-col sm:flex-row gap-3 w-full">
             <Input name="login" aria-label="Login (Usuário)" placeholder="Nome de usuário para login" required className="h-14 w-full sm:flex-1" />
             <Input type="password" name="senha" aria-label="Senha" placeholder="Senha" required className="h-14 w-full sm:flex-1" />
             <Button type="submit" className="h-14 rounded-xl px-6 text-base sm:w-auto w-full">Cadastrar</Button>
