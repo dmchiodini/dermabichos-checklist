@@ -109,13 +109,13 @@ export default function FilaClient({ initialChecklists, user }: { initialCheckli
             
             <div className="flex items-center gap-4 bg-white px-4 py-2 rounded-2xl border shadow-sm">
               <div className="text-center">
-                <p className="text-2xl font-black text-ceu-deep leading-none">{initialChecklists.length}</p>
-                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Banhos Hoje</p>
+                <p className="text-2xl font-black text-ceu-deep leading-none">{checklists.length}</p>
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Banhos</p>
               </div>
               <div className="w-px h-8 bg-border"></div>
               <div className="text-center">
-                <p className="text-2xl font-black text-green-600 leading-none">{initialChecklists.filter(c => c.status === 'Finalizado').length}</p>
-                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Finalizados Hoje</p>
+                <p className="text-2xl font-black text-green-600 leading-none">{checklists.filter(c => c.status === 'Finalizado').length}</p>
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Finalizados</p>
               </div>
             </div>
           </div>
