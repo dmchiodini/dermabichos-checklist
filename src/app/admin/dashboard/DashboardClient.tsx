@@ -291,18 +291,18 @@ export default function DashboardClient({
                 
                 <div className="flex flex-col gap-3">
                   <Label>Nome do funcionário</Label>
-                  <Input name="nome" defaultValue={editingFuncionario.nome} required className="h-12" />
+                  <Input name="nome" defaultValue={editingFuncionario.nome} required className="h-14" />
                 </div>
                 
                 <div className="flex flex-col sm:flex-row gap-3">
                   <div className="flex-1 flex flex-col gap-3">
                     <Label>Cargo (Ex: Banhista, Tosador)</Label>
-                    <Input name="cargo" defaultValue={editingFuncionario.cargo} required className="h-12" />
+                    <Input name="cargo" defaultValue={editingFuncionario.cargo} required className="h-14" />
                   </div>
                   <div className="flex-1 flex flex-col gap-3">
                     <Label>Nível de Acesso</Label>
                     <Select name="role" defaultValue={editingFuncionario.role || 'operacional'} required>
-                      <SelectTrigger className="h-12 data-[size=default]:h-12 w-full text-base bg-white">
+                      <SelectTrigger className="h-14 data-[size=default]:h-14 w-full text-base bg-white">
                         <SelectValue placeholder="Nível de Acesso" />
                       </SelectTrigger>
                       <SelectContent>
@@ -316,19 +316,19 @@ export default function DashboardClient({
                 <div className="flex flex-col sm:flex-row gap-3">
                   <div className="flex-1 flex flex-col gap-3">
                     <Label>Login (Usuário)</Label>
-                    <Input name="login" defaultValue={editingFuncionario.login} required className="h-12" />
+                    <Input name="login" defaultValue={editingFuncionario.login} required className="h-14" />
                   </div>
                   <div className="flex-1 flex flex-col gap-3">
                     <Label>Nova Senha (Opcional)</Label>
-                    <Input type="password" name="senha" placeholder="Deixe em branco para não alterar" className="h-12" />
+                    <Input type="password" name="senha" placeholder="Deixe em branco para não alterar" className="h-14" />
                   </div>
                 </div>
 
                 <div className="pt-4 flex justify-end gap-3">
-                  <Button type="button" variant="outline" onClick={() => setEditingFuncionario(null)} className="h-12 px-6">
+                  <Button type="button" variant="outline" onClick={() => setEditingFuncionario(null)} className="h-14 px-6">
                     Cancelar
                   </Button>
-                  <Button type="submit" className="h-12 px-6">
+                  <Button type="submit" className="h-14 px-6">
                     Salvar Alterações
                   </Button>
                 </div>
