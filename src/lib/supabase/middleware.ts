@@ -62,7 +62,7 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  const isAdminRoute = request.nextUrl.pathname.startsWith('/admin')
+  const isAdminRoute = request.nextUrl.pathname.startsWith('/admin') && !request.nextUrl.pathname.startsWith('/admin/print')
   const isLoginRoute = request.nextUrl.pathname === '/admin/login'
 
   // If user is not authenticated and trying to access an admin route (not login)

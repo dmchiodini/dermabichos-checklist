@@ -48,6 +48,7 @@ export async function loginFuncionario(prevState: any, formData: FormData) {
     nome: func.nome,
     cargo: func.cargo,
     role: func.role || 'operacional',
+    foto_url: func.foto_url
   }), {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',

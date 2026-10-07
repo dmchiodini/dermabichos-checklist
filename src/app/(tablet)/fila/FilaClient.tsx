@@ -4,7 +4,7 @@ import React, { useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Plus, Clock, Play, CheckCircle2, ChevronRight, ShowerHead, Share2, Search, Calendar } from 'lucide-react'
+import { Plus, Clock, Play, CheckCircle2, ChevronRight, ShowerHead, Share2, Search, Calendar, User } from 'lucide-react'
 import { toast } from 'react-toastify'
 import { updateChecklistStatus, getFilteredChecklists } from '@/app/actions/checklist'
 import { Button } from '@/components/ui/button'
@@ -76,24 +76,31 @@ export default function FilaClient({ initialChecklists, user }: { initialCheckli
         {/* Header */}
         <header className="flex flex-col md:flex-row items-start md:items-center justify-between gap-5 mb-8">
           <div className="flex items-center gap-5">
-            <Image
-              src="/dermabichos-logo.svg"
-              alt="Dermabichos"
-              width={88}
-              height={88}
-              className="size-16 shrink-0 rounded-full ring-4 ring-accent md:size-20"
-              priority
-            />
+            {user.foto_url ? (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img 
+                src={user.foto_url} 
+                alt={user.nome} 
+                className="size-16 shrink-0 rounded-full object-cover ring-4 ring-accent md:size-20" 
+              />
+            ) : (
+              <Image
+                src="/dermabichos-logo.svg"
+                alt="Dermabichos"
+                width={88}
+                height={88}
+                className="size-16 shrink-0 rounded-full ring-4 ring-accent md:size-20 bg-white"
+                priority
+              />
+            )}
             <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-2xl font-extrabold leading-tight tracking-tight md:text-[2rem]">
-                  Fila de Atendimento
-                </h1>
+              <h1 className="text-2xl font-extrabold leading-tight tracking-tight md:text-[2rem]">
+                Fila de Atendimento
+              </h1>
+              <div className="mt-1 flex items-center gap-3">
                 <span className="bg-ceu/10 text-ceu-deep px-2 py-0.5 rounded-full text-xs font-bold border border-ceu/20">{user.nome} ({user.cargo})</span>
+                <button onClick={() => logoutFuncionario()} className="text-sm text-muted-foreground underline hover:text-foreground transition-colors">Sair da conta</button>
               </div>
-              <p className="mt-1 text-sm text-muted-foreground flex items-center gap-4">
-                <button onClick={() => logoutFuncionario()} className="underline hover:text-foreground">Sair da conta</button>
-              </p>
             </div>
           </div>
           

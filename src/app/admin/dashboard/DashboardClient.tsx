@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { addFuncionario, toggleFuncionario, deleteFuncionario, updateFuncionario, addTipoHidratacao, toggleTipoHidratacao, deleteChecklist } from '@/app/actions/admin'
 import { toast } from 'react-toastify'
-import { Printer, Eye, Trash2, ClipboardList, Users, Droplets, Dog, Cat, Check, Minus, Search, Calendar, Edit2, User } from 'lucide-react'
+import { Printer, Eye, Trash2, ClipboardList, Users, Droplets, Dog, Cat, Check, Minus, Search, Calendar, Edit2, User, Camera } from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
 
 const panel = 'rounded-2xl border border-border bg-white'
@@ -192,8 +192,8 @@ export default function DashboardClient({
           }
         }} className={`${addForm} flex-col`}>
           <div className="flex flex-col sm:flex-row gap-3 w-full">
-            <Input name="nome" aria-label="Nome do funcionário" placeholder="Nome do funcionário" required className="h-14 flex-1" />
-            <Input name="cargo" aria-label="Cargo" placeholder="Cargo (Ex: Banhista, Tosador)" required className="h-14 flex-1" />
+            <Input name="nome" aria-label="Nome do funcionário" placeholder="Nome do funcionário" required className="h-14 w-full sm:flex-1" />
+            <Input name="cargo" aria-label="Cargo" placeholder="Cargo (Ex: Banhista, Tosador)" required className="h-14 w-full sm:flex-1" />
             <div className="flex-1">
               <Select name="role" required>
                 <SelectTrigger className="h-14 data-[size=default]:h-14 w-full text-base bg-white" aria-label="Nível de Acesso">
@@ -207,9 +207,9 @@ export default function DashboardClient({
             </div>
           </div>
           <div className="flex flex-col sm:flex-row gap-3 w-full">
-            <Input name="login" aria-label="Login (Usuário)" placeholder="Nome de usuário para login" required className="h-14 flex-1" />
-            <Input type="password" name="senha" aria-label="Senha" placeholder="Senha" required className="h-14 flex-1" />
-            <Input type="file" name="foto" accept="image/*" aria-label="Foto (Opcional)" className="h-14 flex-1 pt-3.5 text-muted-foreground file:mr-4 file:py-1 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-ceu/10 file:text-ceu-deep hover:file:bg-ceu/20" />
+            <Input name="login" aria-label="Login (Usuário)" placeholder="Nome de usuário para login" required className="h-14 w-full sm:flex-1" />
+            <Input type="password" name="senha" aria-label="Senha" placeholder="Senha" required className="h-14 w-full sm:flex-1" />
+            <Input type="file" name="foto" accept="image/*" aria-label="Foto (Opcional)" className="h-14 w-full sm:flex-1 pt-3.5 text-muted-foreground file:mr-4 file:py-1 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-ceu/10 file:text-ceu-deep hover:file:bg-ceu/20" />
             <Button type="submit" className="h-14 rounded-xl px-6 text-base sm:w-auto w-full">Cadastrar</Button>
           </div>
         </form>
@@ -250,7 +250,10 @@ export default function DashboardClient({
                     variant="outline"
                     size="icon"
                     className="h-9 w-9 rounded-lg"
-                    onClick={() => setEditingFuncionario(func)}
+                    onClick={() => {
+                      setEditingFuncionario(func)
+                      setPhotoPreviewUrl(null)
+                    }}
                     aria-label="Editar"
                   >
                     <Edit2 className="size-4" />
@@ -281,7 +284,12 @@ export default function DashboardClient({
 
 
         {/* Modal de Edição de Funcionário */}
-        <Dialog open={!!editingFuncionario} onOpenChange={(open) => !open && setEditingFuncionario(null)}>
+        <Dialog open={!!editingFuncionario} onOpenChange={(open) => {
+          if (!open) {
+            setEditingFuncionario(null)
+            setPhotoPreviewUrl(null)
+          }
+        }}>
           <DialogContent className="sm:max-w-xl">
             <DialogHeader>
               <DialogTitle>Editar Funcionário</DialogTitle>
@@ -294,10 +302,44 @@ export default function DashboardClient({
                 } else {
                   toast.success('Funcionário atualizado!')
                   setEditingFuncionario(null)
+                  setPhotoPreviewUrl(null)
                 }
               }} className="space-y-4 pt-4">
                 <input type="hidden" name="id" value={editingFuncionario.id} />
                 
+                <div className="flex flex-col items-center justify-center mb-6">
+                  <div className="relative size-32 overflow-hidden rounded-2xl ring-1 ring-border group">
+                    {(photoPreviewUrl || editingFuncionario.foto_url) ? (
+                      <>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={photoPreviewUrl || editingFuncionario.foto_url}
+                          alt="Foto do funcionário"
+                          className="size-full object-cover"
+                        />
+                        <label className="absolute inset-0 flex cursor-pointer flex-col items-center justify-center bg-black/40 text-white opacity-0 transition-opacity group-hover:opacity-100">
+                          <Camera className="size-6 mb-1" />
+                          <span className="text-xs font-semibold">Trocar foto</span>
+                          <input type="file" name="foto" accept="image/*" className="sr-only" onChange={(e) => {
+                            if (e.target.files?.[0]) {
+                              setPhotoPreviewUrl(URL.createObjectURL(e.target.files[0]))
+                            }
+                          }} />
+                        </label>
+                      </>
+                    ) : (
+                      <label className="flex size-full cursor-pointer flex-col items-center justify-center gap-2 bg-accent/50 text-ceu-deep transition-colors hover:bg-accent focus-within:ring-3 focus-within:ring-ring/60">
+                        <Camera className="size-7" aria-hidden />
+                        <span className="text-sm font-semibold">Adicionar foto</span>
+                        <input type="file" name="foto" accept="image/*" className="sr-only" onChange={(e) => {
+                          if (e.target.files?.[0]) {
+                            setPhotoPreviewUrl(URL.createObjectURL(e.target.files[0]))
+                          }
+                        }} />
+                      </label>
+                    )}
+                  </div>
+                </div>
                 <div className="flex flex-col gap-3">
                   <Label>Nome do funcionário</Label>
                   <Input name="nome" defaultValue={editingFuncionario.nome} required className="h-14" />
@@ -331,10 +373,6 @@ export default function DashboardClient({
                     <Label>Nova Senha (Opcional)</Label>
                     <Input type="password" name="senha" placeholder="Deixe em branco para não alterar" className="h-14" />
                   </div>
-                  <div className="flex-1 flex flex-col gap-3">
-                    <Label>Foto (Opcional)</Label>
-                    <Input type="file" name="foto" accept="image/*" className="h-14 pt-3.5 text-muted-foreground file:mr-4 file:py-1 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-ceu/10 file:text-ceu-deep hover:file:bg-ceu/20" />
-                  </div>
                 </div>
 
                 <div className="pt-4 flex justify-end gap-3">
@@ -363,8 +401,8 @@ export default function DashboardClient({
             hidFormRef.current?.reset()
           }
         }} className={addForm}>
-          <Input name="nome" aria-label="Nome da hidratação" placeholder="Nome da hidratação (Ex: Argan, Queratina)" required className="h-12 flex-1" />
-          <Button type="submit" className="h-12 rounded-xl px-6 text-base">Cadastrar</Button>
+          <Input name="nome" aria-label="Nome da hidratação" placeholder="Nome da hidratação (Ex: Argan, Queratina)" required className="h-14 w-full sm:flex-1" />
+          <Button type="submit" className="h-14 rounded-xl px-6 text-base w-full sm:w-auto">Cadastrar</Button>
         </form>
 
         {initialTiposHidratacao.length > 0 && (

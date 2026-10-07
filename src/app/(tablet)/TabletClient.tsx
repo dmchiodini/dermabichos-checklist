@@ -4,7 +4,7 @@ import React, { useState } from 'react'
 import Image from 'next/image'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Trash2, Check, ChevronsUpDown, Camera, X } from 'lucide-react'
+import { Trash2, Check, ChevronsUpDown, Camera, X, User } from 'lucide-react'
 import { checklistSchema, ChecklistFormValues } from '@/schemas/checklist.schema'
 import { SignaturePad } from '@/components/signature-pad'
 import { submitChecklist, getLookupData, updateChecklistStatus } from '@/app/actions/checklist'
@@ -284,14 +284,23 @@ export default function TabletClient({ user, isRecepcao = true }: { user?: any, 
           >
             <X className="size-6" />
           </Button>
-          <Image
-            src="/dermabichos-logo.svg"
-            alt="Dermabichos"
-            width={88}
-            height={88}
-            className="size-16 shrink-0 rounded-full ring-4 ring-accent md:size-22"
-            priority
-          />
+          {user.foto_url ? (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img 
+              src={user.foto_url} 
+              alt={user.nome} 
+              className="size-16 shrink-0 rounded-full object-cover ring-4 ring-accent md:size-22" 
+            />
+          ) : (
+            <Image
+              src="/dermabichos-logo.svg"
+              alt="Dermabichos"
+              width={88}
+              height={88}
+              className="size-16 shrink-0 rounded-full ring-4 ring-accent md:size-22 bg-white"
+              priority
+            />
+          )}
           <div className="min-w-0 pr-10">
             <h1 className="text-2xl font-extrabold leading-tight tracking-tight md:text-[2rem]">
               Checklist de banho e tosa
