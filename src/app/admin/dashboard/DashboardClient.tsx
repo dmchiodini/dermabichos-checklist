@@ -78,10 +78,13 @@ export default function DashboardClient({
   const [selectedChecklist, setSelectedChecklist] = useState<any | null>(null)
   const [checklistToDelete, setChecklistToDelete] = useState<string | null>(null)
   const [photoPreviewUrl, setPhotoPreviewUrl] = useState<string | null>(null)
+  const [editPhotoUrl, setEditPhotoUrl] = useState<string | null>(null)
+  const [addPhotoName, setAddPhotoName] = useState<string>('')
+  const [currentTab, setCurrentTab] = useState(defaultTab)
   const [isDeleting, setIsDeleting] = useState(false)
 
   return (
-    <Tabs defaultValue="checklists" className="w-full gap-8">
+    <Tabs value={currentTab} onValueChange={setCurrentTab} className="w-full gap-8">
       <TabsList className="h-auto w-full justify-start gap-1 overflow-x-auto rounded-2xl bg-muted p-1.5 sm:w-fit">
         <TabsTrigger value="checklists" className={tabTrigger}><ClipboardList aria-hidden />Checklists</TabsTrigger>
         <TabsTrigger value="funcionarios" className={tabTrigger}><Users aria-hidden />Funcionários</TabsTrigger>
@@ -189,6 +192,7 @@ export default function DashboardClient({
           } else {
             toast.success('Funcionário cadastrado!')
             funcFormRef.current?.reset()
+            setAddPhotoName('')
           }
         }} className={`${addForm} flex-col`}>
           <div className="flex flex-col sm:flex-row gap-3 w-full">
@@ -209,7 +213,15 @@ export default function DashboardClient({
           <div className="flex flex-col sm:flex-row gap-3 w-full">
             <Input name="login" aria-label="Login (Usuário)" placeholder="Nome de usuário para login" required className="h-14 w-full sm:flex-1" />
             <Input type="password" name="senha" aria-label="Senha" placeholder="Senha" required className="h-14 w-full sm:flex-1" />
-            <Input type="file" name="foto" accept="image/*" aria-label="Foto (Opcional)" className="h-14 w-full sm:flex-1 pt-3.5 text-muted-foreground file:mr-4 file:py-1 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-ceu/10 file:text-ceu-deep hover:file:bg-ceu/20" />
+            <div className="relative h-14 w-full sm:flex-1">
+              <Input type="file" name="foto" accept="image/*" className="absolute inset-0 h-full w-full opacity-0 cursor-pointer" onChange={(e) => {
+                if (e.target.files?.[0]) setAddPhotoName(e.target.files[0].name)
+              }} />
+              <div className="flex h-full w-full items-center justify-between rounded-lg border border-input bg-white px-3 text-base text-muted-foreground focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50">
+                <span className="truncate">{addPhotoName || "Foto (Opcional)"}</span>
+                <span className="shrink-0 rounded-full bg-ceu/10 px-3 py-1 text-sm font-semibold text-ceu-deep ml-2">Escolher arquivo</span>
+              </div>
+            </div>
             <Button type="submit" className="h-14 rounded-xl px-6 text-base sm:w-auto w-full">Cadastrar</Button>
           </div>
         </form>
@@ -302,18 +314,18 @@ export default function DashboardClient({
                 } else {
                   toast.success('Funcionário atualizado!')
                   setEditingFuncionario(null)
-                  setPhotoPreviewUrl(null)
+                  setEditPhotoUrl(null)
                 }
               }} className="space-y-4 pt-4">
                 <input type="hidden" name="id" value={editingFuncionario.id} />
                 
                 <div className="flex flex-col items-center justify-center mb-6">
                   <div className="relative size-32 overflow-hidden rounded-2xl ring-1 ring-border group">
-                    {(photoPreviewUrl || editingFuncionario.foto_url) ? (
+                    {(editPhotoUrl || editingFuncionario.foto_url) ? (
                       <>
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
-                          src={photoPreviewUrl || editingFuncionario.foto_url}
+                          src={editPhotoUrl || editingFuncionario.foto_url}
                           alt="Foto do funcionário"
                           className="size-full object-cover"
                         />
@@ -322,7 +334,7 @@ export default function DashboardClient({
                           <span className="text-xs font-semibold">Trocar foto</span>
                           <input type="file" name="foto" accept="image/*" className="sr-only" onChange={(e) => {
                             if (e.target.files?.[0]) {
-                              setPhotoPreviewUrl(URL.createObjectURL(e.target.files[0]))
+                              setEditPhotoUrl(URL.createObjectURL(e.target.files[0]))
                             }
                           }} />
                         </label>
@@ -333,7 +345,7 @@ export default function DashboardClient({
                         <span className="text-sm font-semibold">Adicionar foto</span>
                         <input type="file" name="foto" accept="image/*" className="sr-only" onChange={(e) => {
                           if (e.target.files?.[0]) {
-                            setPhotoPreviewUrl(URL.createObjectURL(e.target.files[0]))
+                            setEditPhotoUrl(URL.createObjectURL(e.target.files[0]))
                           }
                         }} />
                       </label>
