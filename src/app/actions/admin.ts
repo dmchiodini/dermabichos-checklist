@@ -6,12 +6,15 @@ import { revalidatePath } from 'next/cache'
 export async function addFuncionario(formData: FormData) {
   const nome = formData.get('nome') as string
   const cargo = formData.get('cargo') as string
-  const role = formData.get('role') as string
+  let role = formData.get('role') as string
   const login = formData.get('login') as string
   const senha = formData.get('senha') as string
   const foto = formData.get('foto') as File | null
 
   if (!nome || !cargo || !role || !login || !senha) return { success: false, message: 'Preencha todos os campos obrigatórios' }
+
+  if (role === 'Recepção') role = 'recepcao'
+  if (role === 'Operacional') role = 'operacional'
 
   const supabase = await createClient()
 
@@ -63,12 +66,15 @@ export async function updateFuncionario(formData: FormData) {
   const id = formData.get('id') as string
   const nome = formData.get('nome') as string
   const cargo = formData.get('cargo') as string
-  const role = formData.get('role') as string
+  let role = formData.get('role') as string
   const login = formData.get('login') as string
   const senha = formData.get('senha') as string
   const foto = formData.get('foto') as File | null
 
   if (!id || !nome || !cargo || !role || !login) return { success: false, message: 'Preencha os campos obrigatórios' }
+
+  if (role === 'Recepção') role = 'recepcao'
+  if (role === 'Operacional') role = 'operacional'
 
   const supabase = await createClient()
   

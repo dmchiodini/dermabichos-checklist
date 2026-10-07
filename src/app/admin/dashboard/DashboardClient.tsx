@@ -204,24 +204,14 @@ export default function DashboardClient({
                   <SelectValue placeholder="Nível de Acesso" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="recepcao">Recepção</SelectItem>
-                  <SelectItem value="operacional">Operacional</SelectItem>
+                  <SelectItem value="Recepção">Recepção</SelectItem>
+                  <SelectItem value="Operacional">Operacional</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
-          <div className="flex flex-col sm:flex-row gap-3 w-full">
             <Input name="login" aria-label="Login (Usuário)" placeholder="Nome de usuário para login" required className="h-14 w-full sm:flex-1" />
             <Input type="password" name="senha" aria-label="Senha" placeholder="Senha" required className="h-14 w-full sm:flex-1" />
-            <div className="relative h-14 w-full sm:flex-1">
-              <Input type="file" name="foto" accept="image/*" className="absolute inset-0 h-full w-full opacity-0 cursor-pointer" onChange={(e) => {
-                if (e.target.files?.[0]) setAddPhotoName(e.target.files[0].name)
-              }} />
-              <div className="flex h-full w-full items-center justify-between rounded-lg border border-input bg-white px-3 text-base text-muted-foreground focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50">
-                <span className="truncate">{addPhotoName || "Foto (Opcional)"}</span>
-                <span className="shrink-0 rounded-full bg-ceu/10 px-3 py-1 text-sm font-semibold text-ceu-deep ml-2">Escolher arquivo</span>
-              </div>
-            </div>
             <Button type="submit" className="h-14 rounded-xl px-6 text-base sm:w-auto w-full">Cadastrar</Button>
           </div>
         </form>
@@ -364,13 +354,13 @@ export default function DashboardClient({
                   </div>
                   <div className="flex-1 flex flex-col gap-3">
                     <Label>Nível de Acesso</Label>
-                    <Select name="role" defaultValue={editingFuncionario.role || 'operacional'} required>
+                    <Select name="role" defaultValue={editingFuncionario.role === 'recepcao' ? 'Recepção' : 'Operacional'} required>
                       <SelectTrigger className="h-14 data-[size=default]:h-14 w-full text-base bg-white">
                         <SelectValue placeholder="Nível de Acesso" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="recepcao">Recepção</SelectItem>
-                        <SelectItem value="operacional">Operacional</SelectItem>
+                        <SelectItem value="Recepção">Recepção</SelectItem>
+                        <SelectItem value="Operacional">Operacional</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
