@@ -243,7 +243,10 @@ export default function FilaClient({ initialChecklists, user }: { initialCheckli
             <div className="col-span-full py-20 flex flex-col items-center justify-center text-center bg-card rounded-[28px] border border-dashed border-border">
               <ShowerHead className="size-16 text-muted-foreground/30 mb-4" />
               <h3 className="text-xl font-bold text-foreground">Fila vazia</h3>
-              <p className="text-muted-foreground mt-2 max-w-sm">Nenhum pet aguardando banho no momento. Clique em "Novo Checklist" para iniciar.</p>
+              <p className="text-muted-foreground mt-2 max-w-sm">
+                Nenhum pet aguardando banho no momento.
+                {isRecepcao && ' Clique em "Novo Checklist" para iniciar.'}
+              </p>
             </div>
           )}
         </div>
