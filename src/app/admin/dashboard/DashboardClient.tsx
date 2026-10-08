@@ -84,7 +84,7 @@ export default function DashboardClient({
 
   return (
     <Tabs value={currentTab} onValueChange={setCurrentTab} className="w-full gap-8">
-      <TabsList className="h-auto w-full justify-start gap-1 overflow-x-auto rounded-2xl bg-muted p-1.5 sm:w-fit">
+      <TabsList className="h-auto w-full justify-start gap-1 flex-wrap rounded-2xl bg-muted p-1.5 sm:w-fit">
         <TabsTrigger value="checklists" className={tabTrigger}><ClipboardList aria-hidden />Checklists</TabsTrigger>
         <TabsTrigger value="funcionarios" className={tabTrigger}><Users aria-hidden />Funcionários</TabsTrigger>
         <TabsTrigger value="hidratacao" className={tabTrigger}><Droplets aria-hidden />Hidratações</TabsTrigger>
