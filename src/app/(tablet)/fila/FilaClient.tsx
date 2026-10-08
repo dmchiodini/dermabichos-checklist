@@ -4,7 +4,7 @@ import React, { useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Plus, Clock, Play, CheckCircle2, ChevronRight, ShowerHead, Share2, Search, Calendar, User } from 'lucide-react'
+import { Plus, Clock, Play, CheckCircle2, ChevronRight, ShowerHead, Share2, Search, Calendar, User, RefreshCw } from 'lucide-react'
 import { toast } from 'react-toastify'
 import { updateChecklistStatus, getFilteredChecklists } from '@/app/actions/checklist'
 import { Button } from '@/components/ui/button'
@@ -129,14 +129,27 @@ export default function FilaClient({ initialChecklists, user }: { initialCheckli
             />
           </div>
           
-          <div className="relative w-full md:w-48 shrink-0">
-            <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-            <Input 
-              type="date" 
-              className="pl-9 h-12 bg-white rounded-xl"
-              value={filterDate}
-              onChange={(e) => setFilterDate(e.target.value)}
-            />
+          <div className="flex w-full md:w-auto gap-3 shrink-0">
+            <div className="relative flex-1 md:w-48">
+              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+              <Input 
+                type="date" 
+                className="pl-9 h-12 bg-white rounded-xl"
+                value={filterDate}
+                onChange={(e) => setFilterDate(e.target.value)}
+              />
+            </div>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                toast.info('Atualizando fila...', { autoClose: 1000 })
+                applyFilters()
+              }} 
+              className="h-12 px-4 rounded-xl border-border bg-white text-muted-foreground hover:text-foreground"
+              aria-label="Atualizar cards"
+            >
+              <RefreshCw className="size-5" />
+            </Button>
           </div>
 
           <div className="flex items-center gap-4 bg-white px-5 h-12 rounded-xl border shadow-sm w-full md:w-auto md:ml-auto justify-center">
