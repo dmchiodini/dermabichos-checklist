@@ -152,12 +152,12 @@ export default function TabletClient({ user, isRecepcao = true }: { user?: any, 
         hipoalergenico: false,
       },
       termo_aceito: false,
-      especie: 'Cão'
+      especie: 'Canina'
     },
   })
 
   const especie = watch('especie')
-  const racaOptions = especie === 'Gato' ? catBreeds : dogBreeds
+  const racaOptions = especie === 'Felina' ? catBreeds : dogBreeds
 
   useEffect(() => {
     if (editId) {
@@ -284,23 +284,14 @@ export default function TabletClient({ user, isRecepcao = true }: { user?: any, 
           >
             <X className="size-6" />
           </Button>
-          {user.foto_url ? (
-            /* eslint-disable-next-line @next/next/no-img-element */
-            <img 
-              src={user.foto_url} 
-              alt={user.nome} 
-              className="size-16 shrink-0 rounded-full object-cover ring-4 ring-accent md:size-22" 
-            />
-          ) : (
-            <Image
-              src="/dermabichos-logo.svg"
-              alt="Dermabichos"
-              width={88}
-              height={88}
-              className="size-16 shrink-0 rounded-full ring-4 ring-accent md:size-22 bg-white"
-              priority
-            />
-          )}
+          <Image
+            src="/dermabichos-logo.svg"
+            alt="Dermabichos"
+            width={88}
+            height={88}
+            className="size-16 shrink-0 rounded-full ring-4 ring-accent md:size-22 bg-white"
+            priority
+          />
           <div className="min-w-0 pr-10">
             <h1 className="text-2xl font-extrabold leading-tight tracking-tight md:text-[2rem]">
               Checklist Estética Animal
@@ -337,8 +328,8 @@ export default function TabletClient({ user, isRecepcao = true }: { user?: any, 
                           <SelectValue placeholder="Selecione..." />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="Cão">Cão</SelectItem>
-                          <SelectItem value="Gato">Gato</SelectItem>
+                          <SelectItem value="Canina">Canina</SelectItem>
+                          <SelectItem value="Felina">Felina</SelectItem>
                         </SelectContent>
                       </Select>
                     )}

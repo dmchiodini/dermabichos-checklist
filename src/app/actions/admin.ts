@@ -136,3 +136,16 @@ export async function deleteChecklist(id: string) {
   return { success: true }
 }
 
+export async function deleteTipoHidratacao(id: string) {
+  const supabase = await createClient()
+  const { error } = await supabase.from('tipos_hidratacao').delete().eq('id', id)
+  if (error) {
+    if (error.code === '23503') { // foreign key violation
+      return { success: false, message: 'Não é possível excluir hidratação que já foi usada em um checklist.' }
+    }
+    return { success: false, message: error.message }
+  }
+  revalidatePath('/admin/dashboard')
+  return { success: true }
+}
+

@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { addFuncionario, toggleFuncionario, deleteFuncionario, updateFuncionario, addTipoHidratacao, toggleTipoHidratacao, deleteChecklist } from '@/app/actions/admin'
+import { addFuncionario, toggleFuncionario, deleteFuncionario, updateFuncionario, addTipoHidratacao, toggleTipoHidratacao, deleteTipoHidratacao, deleteChecklist } from '@/app/actions/admin'
 import { toast } from 'react-toastify'
 import { Printer, Eye, Trash2, ClipboardList, Users, Droplets, Dog, Cat, Check, Minus, Search, Calendar, Edit2, User, Camera } from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -129,7 +129,7 @@ export default function DashboardClient({
         ) : (
           <ul className={`${panel} divide-y divide-border overflow-hidden`}>
             {initialChecklists.map((item) => {
-              const SpeciesIcon = item.especie === 'Gato' ? Cat : Dog
+              const SpeciesIcon = item.especie === 'Felina' ? Cat : Dog
               const status = item.status || 'Aguardando'
               const config = status === 'Aguardando' ? { color: 'text-amber-600', bg: 'bg-amber-100', border: 'border-amber-200' } :
                              status === 'Em banho' ? { color: 'text-ceu-deep', bg: 'bg-ceu/20', border: 'border-ceu' } :
@@ -140,7 +140,7 @@ export default function DashboardClient({
               return (
                 <li key={item.id} className="flex flex-col gap-4 px-4 py-4 sm:flex-row sm:items-center md:px-6">
                   <div className="flex min-w-0 flex-1 items-center gap-4">
-                    <span className={`grid size-12 shrink-0 place-items-center rounded-full ${item.especie === 'Gato' ? 'bg-secondary text-rosa-deep' : 'bg-accent text-ceu-deep'}`}>
+                    <span className={`grid size-12 shrink-0 place-items-center rounded-full ${item.especie === 'Felina' ? 'bg-secondary text-rosa-deep' : 'bg-accent text-ceu-deep'}`}>
                       <SpeciesIcon className="size-6" aria-label={item.especie} />
                     </span>
                     <div className="min-w-0">
@@ -419,6 +419,24 @@ export default function DashboardClient({
                     onClick={() => toggleTipoHidratacao(tipo.id, tipo.ativo)}
                   >
                     {tipo.ativo ? 'Desativar' : 'Ativar'}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-9 w-9 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                    onClick={async () => {
+                      if (confirm('Tem certeza que deseja excluir esta hidratação?')) {
+                        const res = await deleteTipoHidratacao(tipo.id)
+                        if (!res.success) {
+                          toast.error(res.message)
+                        } else {
+                          toast.success('Hidratação excluída!')
+                        }
+                      }
+                    }}
+                    title="Excluir hidratação"
+                  >
+                    <Trash2 className="size-4" />
                   </Button>
                 </div>
               </li>
