@@ -68,7 +68,7 @@ export default function DashboardOverview() {
           <h2 className="text-xl font-bold text-foreground">Visão Geral</h2>
           <p className="text-sm text-muted-foreground">Estatísticas e métricas do sistema</p>
         </div>
-        <Select value={period} onValueChange={setPeriod}>
+        <Select value={period} onValueChange={(val) => setPeriod(val || 'mes')}>
           <SelectTrigger className="w-full sm:w-[200px] h-12 bg-muted/50 border-none font-semibold">
             <SelectValue placeholder="Selecione o período" />
           </SelectTrigger>
