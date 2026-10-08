@@ -9,8 +9,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { addFuncionario, toggleFuncionario, deleteFuncionario, updateFuncionario, addTipoHidratacao, toggleTipoHidratacao, deleteTipoHidratacao, deleteChecklist } from '@/app/actions/admin'
 import { toast } from 'react-toastify'
-import { Printer, Eye, Trash2, ClipboardList, Users, Droplets, Dog, Cat, Check, Minus, Search, Calendar, Edit2, User, Camera } from 'lucide-react'
+import { Printer, Eye, Trash2, ClipboardList, Users, Droplets, Dog, Cat, Check, Minus, Search, Calendar, Edit2, User, Camera, PieChart } from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import DashboardOverview from './DashboardOverview'
 
 const panel = 'rounded-2xl border border-border bg-white'
 const sectionTitle = 'text-2xl font-bold tracking-tight'
@@ -79,16 +80,21 @@ export default function DashboardClient({
   const [checklistToDelete, setChecklistToDelete] = useState<string | null>(null)
   const [photoPreviewUrl, setPhotoPreviewUrl] = useState<string | null>(null)
   const [editPhotoUrl, setEditPhotoUrl] = useState<string | null>(null)
-  const [currentTab, setCurrentTab] = useState('checklists')
+  const [currentTab, setCurrentTab] = useState('visao-geral')
   const [isDeleting, setIsDeleting] = useState(false)
 
   return (
     <Tabs value={currentTab} onValueChange={setCurrentTab} className="w-full gap-8">
       <TabsList className="h-auto w-full justify-start gap-1 flex-wrap rounded-2xl bg-muted p-1.5 sm:w-fit">
+        <TabsTrigger value="visao-geral" className={tabTrigger}><PieChart aria-hidden />Visão Geral</TabsTrigger>
         <TabsTrigger value="checklists" className={tabTrigger}><ClipboardList aria-hidden />Checklists</TabsTrigger>
         <TabsTrigger value="funcionarios" className={tabTrigger}><Users aria-hidden />Funcionários</TabsTrigger>
         <TabsTrigger value="hidratacao" className={tabTrigger}><Droplets aria-hidden />Hidratações</TabsTrigger>
       </TabsList>
+
+      <TabsContent value="visao-geral" className="space-y-5">
+        <DashboardOverview />
+      </TabsContent>
 
       <TabsContent value="checklists" className="space-y-5">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
