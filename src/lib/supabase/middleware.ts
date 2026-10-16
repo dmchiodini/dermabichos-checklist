@@ -79,5 +79,12 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
+  // If accessing /admin root, redirect to dashboard
+  if (request.nextUrl.pathname === '/admin' || request.nextUrl.pathname === '/admin/') {
+    const url = request.nextUrl.clone()
+    url.pathname = '/admin/dashboard'
+    return NextResponse.redirect(url)
+  }
+
   return supabaseResponse
 }

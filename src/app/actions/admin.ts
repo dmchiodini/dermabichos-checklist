@@ -29,10 +29,13 @@ export async function addFuncionario(formData: FormData) {
       .from('checklists')
       .upload(fileName, buffer, { contentType: foto.type, upsert: false })
 
-    if (!uploadError) {
-      const { data: publicUrlData } = supabase.storage.from('checklists').getPublicUrl(fileName)
-      foto_url = publicUrlData.publicUrl
+    if (uploadError) {
+      console.error('Erro no upload da foto do funcionário:', uploadError)
+      return { success: false, message: `Erro ao salvar foto: ${uploadError.message}` }
     }
+
+    const { data: publicUrlData } = supabase.storage.from('checklists').getPublicUrl(fileName)
+    foto_url = publicUrlData.publicUrl
   }
 
   const { error } = await supabase.from('funcionarios').insert({ nome, cargo, role, login, senha, ativo: true, foto_url })
@@ -40,6 +43,7 @@ export async function addFuncionario(formData: FormData) {
   if (error) return { success: false, message: error.message }
   
   revalidatePath('/admin/dashboard')
+  revalidatePath('/')
   return { success: true }
 }
 
@@ -47,6 +51,7 @@ export async function toggleFuncionario(id: string, currentStatus: boolean) {
   const supabase = await createClient()
   await supabase.from('funcionarios').update({ ativo: !currentStatus }).eq('id', id)
   revalidatePath('/admin/dashboard')
+  revalidatePath('/')
 }
 
 export async function deleteFuncionario(id: string) {
@@ -59,6 +64,7 @@ export async function deleteFuncionario(id: string) {
     return { success: false, message: error.message }
   }
   revalidatePath('/admin/dashboard')
+  revalidatePath('/')
   return { success: true }
 }
 
@@ -93,10 +99,13 @@ export async function updateFuncionario(formData: FormData) {
       .from('checklists')
       .upload(fileName, buffer, { contentType: foto.type, upsert: false })
 
-    if (!uploadError) {
-      const { data: publicUrlData } = supabase.storage.from('checklists').getPublicUrl(fileName)
-      updateData.foto_url = publicUrlData.publicUrl
+    if (uploadError) {
+      console.error('Erro no upload da foto do funcionário:', uploadError)
+      return { success: false, message: `Erro ao salvar foto: ${uploadError.message}` }
     }
+
+    const { data: publicUrlData } = supabase.storage.from('checklists').getPublicUrl(fileName)
+    updateData.foto_url = publicUrlData.publicUrl
   }
 
   const { error } = await supabase.from('funcionarios').update(updateData).eq('id', id)
@@ -104,6 +113,7 @@ export async function updateFuncionario(formData: FormData) {
   if (error) return { success: false, message: error.message }
   
   revalidatePath('/admin/dashboard')
+  revalidatePath('/')
   return { success: true }
 }
 

@@ -16,7 +16,7 @@ import DashboardOverview from './DashboardOverview'
 const panel = 'rounded-2xl border border-border bg-white'
 const sectionTitle = 'text-2xl font-bold tracking-tight'
 const addForm = 'flex flex-col gap-3 rounded-2xl border border-border bg-white p-4 sm:flex-row'
-const tabTrigger = 'h-11 flex-none gap-2 rounded-xl px-4 text-base font-semibold text-muted-foreground hover:text-foreground data-active:bg-white data-active:text-foreground data-active:shadow-sm'
+const tabTrigger = 'h-11 flex-1 sm:flex-none justify-center gap-2 rounded-xl px-3 sm:px-4 text-sm sm:text-base font-semibold text-muted-foreground hover:text-foreground data-active:bg-white data-active:text-foreground data-active:shadow-sm'
 
 function StatusPill({ ativo }: { ativo: boolean }) {
   return (
@@ -80,12 +80,14 @@ export default function DashboardClient({
   const [checklistToDelete, setChecklistToDelete] = useState<string | null>(null)
   const [photoPreviewUrl, setPhotoPreviewUrl] = useState<string | null>(null)
   const [editPhotoUrl, setEditPhotoUrl] = useState<string | null>(null)
+  const [selectedPhotoFile, setSelectedPhotoFile] = useState<File | null>(null)
+  const [isSavingFuncionario, setIsSavingFuncionario] = useState(false)
   const [currentTab, setCurrentTab] = useState('visao-geral')
   const [isDeleting, setIsDeleting] = useState(false)
 
   return (
-    <Tabs value={currentTab} onValueChange={setCurrentTab} className="w-full gap-8">
-      <TabsList className="h-auto w-full justify-start gap-1 flex-wrap rounded-2xl bg-muted p-1.5 sm:w-fit">
+    <Tabs value={currentTab} onValueChange={setCurrentTab} className="w-full gap-6 sm:gap-8">
+      <TabsList className="h-auto w-full grid grid-cols-2 gap-1.5 rounded-2xl bg-muted p-1.5 sm:flex sm:w-fit">
         <TabsTrigger value="visao-geral" className={tabTrigger}><PieChart aria-hidden />Visão Geral</TabsTrigger>
         <TabsTrigger value="checklists" className={tabTrigger}><ClipboardList aria-hidden />Checklists</TabsTrigger>
         <TabsTrigger value="funcionarios" className={tabTrigger}><Users aria-hidden />Funcionários</TabsTrigger>
@@ -197,6 +199,7 @@ export default function DashboardClient({
           } else {
             toast.success('Funcionário cadastrado!')
             funcFormRef.current?.reset()
+            router.refresh()
           }
         }} className={`${addForm} flex-col`}>
           <div className="flex flex-col sm:flex-row gap-3 w-full">
@@ -249,7 +252,10 @@ export default function DashboardClient({
                   <Button
                     variant={func.ativo ? 'outline' : 'default'}
                     className="h-9 w-24 rounded-lg text-sm font-semibold"
-                    onClick={() => toggleFuncionario(func.id, func.ativo)}
+                    onClick={async () => {
+                      await toggleFuncionario(func.id, func.ativo)
+                      router.refresh()
+                    }}
                   >
                     {func.ativo ? 'Desativar' : 'Ativar'}
                   </Button>
@@ -260,6 +266,8 @@ export default function DashboardClient({
                     onClick={() => {
                       setEditingFuncionario(func)
                       setPhotoPreviewUrl(null)
+                      setEditPhotoUrl(null)
+                      setSelectedPhotoFile(null)
                     }}
                     aria-label="Editar"
                   >
@@ -276,6 +284,7 @@ export default function DashboardClient({
                           toast.error(res.message)
                         } else {
                           toast.success('Usuário excluído!')
+                          router.refresh()
                         }
                       }
                     }}
@@ -294,7 +303,8 @@ export default function DashboardClient({
         <Dialog open={!!editingFuncionario} onOpenChange={(open) => {
           if (!open) {
             setEditingFuncionario(null)
-            setPhotoPreviewUrl(null)
+            setEditPhotoUrl(null)
+            setSelectedPhotoFile(null)
           }
         }}>
           <DialogContent className="sm:max-w-xl">
@@ -303,48 +313,66 @@ export default function DashboardClient({
             </DialogHeader>
             {editingFuncionario && (
               <form action={async (formData) => {
+                if (selectedPhotoFile) {
+                  formData.set('foto', selectedPhotoFile)
+                }
+                setIsSavingFuncionario(true)
                 const res = await updateFuncionario(formData)
+                setIsSavingFuncionario(false)
                 if (!res.success) {
                   toast.error(res.message)
                 } else {
                   toast.success('Funcionário atualizado!')
                   setEditingFuncionario(null)
                   setEditPhotoUrl(null)
+                  setSelectedPhotoFile(null)
+                  router.refresh()
                 }
               }} className="space-y-4 pt-4">
                 <input type="hidden" name="id" value={editingFuncionario.id} />
                 
                 <div className="flex flex-col items-center justify-center mb-6">
-                  <div className="relative size-32 overflow-hidden rounded-2xl ring-1 ring-border group">
+                  <div className="relative size-32 overflow-hidden rounded-2xl ring-1 ring-border group bg-accent/40">
                     {(editPhotoUrl || editingFuncionario.foto_url) ? (
-                      <>
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={editPhotoUrl || editingFuncionario.foto_url}
-                          alt="Foto do funcionário"
-                          className="size-full object-cover"
-                        />
-                        <label className="absolute inset-0 flex cursor-pointer flex-col items-center justify-center bg-black/40 text-white opacity-0 transition-opacity group-hover:opacity-100">
-                          <Camera className="size-6 mb-1" />
-                          <span className="text-xs font-semibold">Trocar foto</span>
-                          <input type="file" name="foto" accept="image/*" className="sr-only" onChange={(e) => {
-                            if (e.target.files?.[0]) {
-                              setEditPhotoUrl(URL.createObjectURL(e.target.files[0]))
-                            }
-                          }} />
-                        </label>
-                      </>
+                      /* eslint-disable-next-line @next/next/no-img-element */
+                      <img
+                        src={editPhotoUrl || editingFuncionario.foto_url}
+                        alt="Foto do funcionário"
+                        className="size-full object-cover"
+                      />
                     ) : (
-                      <label className="flex size-full cursor-pointer flex-col items-center justify-center gap-2 bg-accent/50 text-ceu-deep transition-colors hover:bg-accent focus-within:ring-3 focus-within:ring-ring/60">
+                      <div className="flex size-full flex-col items-center justify-center gap-2 text-ceu-deep">
                         <Camera className="size-7" aria-hidden />
-                        <span className="text-sm font-semibold">Adicionar foto</span>
-                        <input type="file" name="foto" accept="image/*" className="sr-only" onChange={(e) => {
-                          if (e.target.files?.[0]) {
-                            setEditPhotoUrl(URL.createObjectURL(e.target.files[0]))
-                          }
-                        }} />
-                      </label>
+                        <span className="text-xs font-semibold">Adicionar foto</span>
+                      </div>
                     )}
+
+                    <label
+                      htmlFor="edit-funcionario-foto-input"
+                      className={`absolute inset-0 flex cursor-pointer flex-col items-center justify-center bg-black/40 text-white transition-opacity ${
+                        (editPhotoUrl || editingFuncionario.foto_url) ? 'opacity-0 group-hover:opacity-100' : 'opacity-0 hover:opacity-100'
+                      }`}
+                    >
+                      <Camera className="size-6 mb-1" />
+                      <span className="text-xs font-semibold">
+                        {(editPhotoUrl || editingFuncionario.foto_url) ? 'Trocar foto' : 'Escolher foto'}
+                      </span>
+                    </label>
+
+                    <input
+                      id="edit-funcionario-foto-input"
+                      type="file"
+                      name="foto"
+                      accept="image/*"
+                      className="sr-only"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0]
+                        if (file) {
+                          setSelectedPhotoFile(file)
+                          setEditPhotoUrl(URL.createObjectURL(file))
+                        }
+                      }}
+                    />
                   </div>
                 </div>
                 <div className="flex flex-col gap-3">
@@ -383,11 +411,11 @@ export default function DashboardClient({
                 </div>
 
                 <div className="pt-4 flex justify-end gap-3">
-                  <Button type="button" variant="outline" onClick={() => setEditingFuncionario(null)} className="h-14 px-6">
+                  <Button type="button" variant="outline" onClick={() => setEditingFuncionario(null)} className="h-14 px-6" disabled={isSavingFuncionario}>
                     Cancelar
                   </Button>
-                  <Button type="submit" className="h-14 px-6">
-                    Salvar Alterações
+                  <Button type="submit" className="h-14 px-6" disabled={isSavingFuncionario}>
+                    {isSavingFuncionario ? 'Salvando...' : 'Salvar Alterações'}
                   </Button>
                 </div>
               </form>
