@@ -5,14 +5,16 @@ export const checklistSchema = z.object({
   pet_nome: z.string().min(1, 'O nome do pet é obrigatório'),
   especie: z.string().min(1, 'A espécie é obrigatória'),
   raca: z.string().min(1, 'A raça é obrigatória'),
-  tutor: z.string().min(1, 'O nome do tutor é obrigatório'),
+  tutor: z.string().min(1, 'O nome do responsável é obrigatório'),
   
   detalhes: z.object({
     laco: z.boolean().default(false),
     brilho: z.boolean().default(false),
     perfume: z.boolean().default(false),
     escova_dente: z.boolean().default(false),
-    outros: z.string().nullable().optional()
+    outros: z.string().nullable().optional(),
+    observacao_cuidados: z.string().nullable().optional(),
+    cuidados_medicos: z.boolean().optional().default(false)
   }),
 
   tosa: z.object({
@@ -22,11 +24,13 @@ export const checklistSchema = z.object({
   }),
 
   hidratacao: z.object({
-    padrao: z.boolean().default(false),
-    hipoalergenico: z.boolean().default(false),
+    padrao: z.boolean().optional().default(false),
+    hipoalergenico: z.boolean().optional().default(false),
     qual: z.string().nullable().optional()
   }),
 
+  cuidados_medicos: z.boolean().optional().default(false),
+  observacao_cuidados: z.string().nullable().optional(),
   observacao: z.string().nullable().optional(),
   
   // Realizado por e Vistoriado por serão selecionados

@@ -5,6 +5,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Plus, Clock, Play, CheckCircle2, ChevronRight, ShowerHead, Share2, Search, Calendar, User, RefreshCw } from 'lucide-react'
+import { CiMedicalCross } from 'react-icons/ci'
 import { toast } from 'react-toastify'
 import { updateChecklistStatus, getFilteredChecklists } from '@/app/actions/checklist'
 import { Button } from '@/components/ui/button'
@@ -121,7 +122,7 @@ export default function FilaClient({ initialChecklists, user }: { initialCheckli
           <div className="relative flex-1 w-full">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
             <Input 
-              placeholder="Buscar pet ou tutor..." 
+              placeholder="Buscar pet ou responsável..." 
               className="pl-9 h-12 bg-white rounded-xl"
               value={filterSearch}
               onChange={(e) => setFilterSearch(e.target.value)}
@@ -199,7 +200,24 @@ export default function FilaClient({ initialChecklists, user }: { initialCheckli
                   
                   <h3 className="text-xl font-bold leading-tight mb-1">{checklist.pet_nome}</h3>
                   <p className="text-muted-foreground text-sm font-medium mb-3">{checklist.raca} ({checklist.especie})</p>
-                  <p className="text-sm font-medium text-foreground"><span className="text-muted-foreground">Tutor:</span> {checklist.tutor}</p>
+                  <p className="text-sm font-medium text-foreground"><span className="text-muted-foreground">Responsável:</span> {checklist.tutor}</p>
+                  
+                  {((checklist.detalhes as any)?.cuidados_medicos || (checklist as any).cuidados_medicos) && (
+                    <div className="mt-3 flex items-start gap-2 rounded-xl border border-red-200 bg-red-50/80 p-2 text-xs text-red-700">
+                      <CiMedicalCross className="size-4 shrink-0 text-red-600 mt-0.5" />
+                      <span className="font-semibold line-clamp-2">
+                        {checklist.observacao ? `Alerta de saúde: ${checklist.observacao}` : 'Alerta de saúde'}
+                      </span>
+                    </div>
+                  )}
+                  {!((checklist.detalhes as any)?.cuidados_medicos || (checklist as any).cuidados_medicos) && ((checklist.detalhes as any)?.observacao_cuidados || (checklist as any).observacao_cuidados) && (
+                    <div className="mt-3 flex items-start gap-2 rounded-xl border border-red-200 bg-red-50/80 p-2 text-xs text-red-700">
+                      <CiMedicalCross className="size-4 shrink-0 text-red-600 mt-0.5" />
+                      <span className="font-semibold line-clamp-2">
+                        {(checklist.detalhes as any)?.observacao_cuidados || (checklist as any).observacao_cuidados}
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 <div className="border-t border-border bg-accent/30 p-3 flex items-center justify-between gap-2">

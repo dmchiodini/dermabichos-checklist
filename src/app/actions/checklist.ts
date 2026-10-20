@@ -93,7 +93,9 @@ export async function submitChecklist(data: ChecklistFormValues, fotosFormData: 
         brilho: data.detalhes?.brilho || false,
         perfume: data.detalhes?.perfume || false,
         escova_dente: data.detalhes?.escova_dente || false,
-        outros: data.detalhes?.outros || ''
+        outros: data.detalhes?.outros || '',
+        observacao_cuidados: data.observacao_cuidados || data.detalhes?.observacao_cuidados || '',
+        cuidados_medicos: Boolean(data.cuidados_medicos || data.detalhes?.cuidados_medicos)
       },
       tosa: {
         higienica: data.tosa?.higienica || false,

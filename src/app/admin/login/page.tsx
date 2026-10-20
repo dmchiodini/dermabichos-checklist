@@ -39,7 +39,7 @@ export default function LoginPage() {
           priority
         />
         <p className="relative max-w-sm font-heading text-4xl leading-[1.1] font-bold tracking-tight">
-          Cada banho registrado, cada tutor tranquilo.
+          Cada banho registrado, cada responsável tranquilo.
         </p>
       </div>
 

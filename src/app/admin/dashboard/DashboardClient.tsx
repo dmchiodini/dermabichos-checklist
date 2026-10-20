@@ -7,9 +7,10 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { addFuncionario, toggleFuncionario, deleteFuncionario, updateFuncionario, addTipoHidratacao, toggleTipoHidratacao, deleteTipoHidratacao, deleteChecklist } from '@/app/actions/admin'
+import { addFuncionario, toggleFuncionario, deleteFuncionario, updateFuncionario, addTipoHidratacao, toggleTipoHidratacao, updateTipoHidratacao, deleteTipoHidratacao, deleteChecklist } from '@/app/actions/admin'
 import { toast } from 'react-toastify'
-import { Printer, Eye, Trash2, ClipboardList, Users, Droplets, Dog, Cat, Check, Minus, Search, Calendar, Edit2, User, Camera, PieChart } from 'lucide-react'
+import { Printer, Eye, Trash2, ClipboardList, Users, Droplets, Dog, Cat, Check, Minus, Search, Calendar, Edit2, User, Camera, PieChart, Plus } from 'lucide-react'
+import { CiMedicalCross } from 'react-icons/ci'
 import { useRouter, useSearchParams } from 'next/navigation'
 import DashboardOverview from './DashboardOverview'
 
@@ -58,10 +59,10 @@ export default function DashboardClient({
 }) {
   const searchParams = useSearchParams()
   const router = useRouter()
-  
+
   const today = new Date()
   const defaultDate = new Date(today.getTime() - (today.getTimezoneOffset() * 60000)).toISOString().split('T')[0]
-  
+
   const [filterDate, setFilterDate] = useState(searchParams.get('date') || defaultDate)
   const [filterSearch, setFilterSearch] = useState(searchParams.get('search') || '')
 
@@ -84,6 +85,8 @@ export default function DashboardClient({
   const [isSavingFuncionario, setIsSavingFuncionario] = useState(false)
   const [currentTab, setCurrentTab] = useState('visao-geral')
   const [isDeleting, setIsDeleting] = useState(false)
+  const [editingTipoHidratacao, setEditingTipoHidratacao] = useState<any>(null)
+  const [isSavingHidratacao, setIsSavingHidratacao] = useState(false)
 
   return (
     <Tabs value={currentTab} onValueChange={setCurrentTab} className="w-full gap-6 sm:gap-8">
@@ -104,12 +107,12 @@ export default function DashboardClient({
             <h2 className={sectionTitle}>Checklists</h2>
             <p className="text-sm text-muted-foreground">Mostrando os resultados da busca</p>
           </div>
-          
+
           <div className="flex flex-col sm:flex-row gap-3">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-              <Input 
-                placeholder="Buscar pet ou tutor..." 
+              <Input
+                placeholder="Buscar pet ou responsável..."
                 className="pl-9 bg-white"
                 value={filterSearch}
                 onChange={(e) => setFilterSearch(e.target.value)}
@@ -118,8 +121,8 @@ export default function DashboardClient({
             </div>
             <div className="relative">
               <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-              <Input 
-                type="date" 
+              <Input
+                type="date"
                 className="pl-9 bg-white"
                 value={filterDate}
                 onChange={(e) => setFilterDate(e.target.value)}
@@ -140,10 +143,10 @@ export default function DashboardClient({
               const SpeciesIcon = item.especie === 'Felina' ? Cat : Dog
               const status = item.status || 'Aguardando'
               const config = status === 'Aguardando' ? { color: 'text-amber-600', bg: 'bg-amber-100', border: 'border-amber-200' } :
-                             status === 'Em banho' ? { color: 'text-ceu-deep', bg: 'bg-ceu/20', border: 'border-ceu' } :
-                             status === 'Banho finalizado' ? { color: 'text-green-700', bg: 'bg-green-100', border: 'border-green-300' } :
-                             status === 'Finalizado' ? { color: 'text-green-600', bg: 'bg-green-100', border: 'border-green-200' } :
-                             { color: 'text-gray-600', bg: 'bg-gray-100', border: 'border-gray-200' }
+                status === 'Em banho' ? { color: 'text-ceu-deep', bg: 'bg-ceu/20', border: 'border-ceu' } :
+                  status === 'Banho finalizado' ? { color: 'text-green-700', bg: 'bg-green-100', border: 'border-green-300' } :
+                    status === 'Finalizado' ? { color: 'text-green-600', bg: 'bg-green-100', border: 'border-green-200' } :
+                      { color: 'text-gray-600', bg: 'bg-gray-100', border: 'border-gray-200' }
 
               return (
                 <li key={item.id} className="flex flex-col gap-4 px-4 py-4 sm:flex-row sm:items-center md:px-6">
@@ -330,7 +333,7 @@ export default function DashboardClient({
                 }
               }} className="space-y-4 pt-4">
                 <input type="hidden" name="id" value={editingFuncionario.id} />
-                
+
                 <div className="flex flex-col items-center justify-center mb-6">
                   <div className="relative size-32 overflow-hidden rounded-2xl ring-1 ring-border group bg-accent/40">
                     {(editPhotoUrl || editingFuncionario.foto_url) ? (
@@ -349,9 +352,8 @@ export default function DashboardClient({
 
                     <label
                       htmlFor="edit-funcionario-foto-input"
-                      className={`absolute inset-0 flex cursor-pointer flex-col items-center justify-center bg-black/40 text-white transition-opacity ${
-                        (editPhotoUrl || editingFuncionario.foto_url) ? 'opacity-0 group-hover:opacity-100' : 'opacity-0 hover:opacity-100'
-                      }`}
+                      className={`absolute inset-0 flex cursor-pointer flex-col items-center justify-center bg-black/40 text-white transition-opacity ${(editPhotoUrl || editingFuncionario.foto_url) ? 'opacity-0 group-hover:opacity-100' : 'opacity-0 hover:opacity-100'
+                        }`}
                     >
                       <Camera className="size-6 mb-1" />
                       <span className="text-xs font-semibold">
@@ -379,7 +381,7 @@ export default function DashboardClient({
                   <Label>Nome do funcionário</Label>
                   <Input name="nome" defaultValue={editingFuncionario.nome} required className="h-14" />
                 </div>
-                
+
                 <div className="flex flex-col sm:flex-row gap-3">
                   <div className="flex-1 flex flex-col gap-3">
                     <Label>Cargo (Ex: Banhista, Tosador)</Label>
@@ -455,6 +457,16 @@ export default function DashboardClient({
                     {tipo.ativo ? 'Desativar' : 'Ativar'}
                   </Button>
                   <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-9 w-9 rounded-lg"
+                    onClick={() => setEditingTipoHidratacao(tipo)}
+                    aria-label="Editar"
+                    title="Editar hidratação"
+                  >
+                    <Edit2 className="size-4" />
+                  </Button>
+                  <Button
                     variant="ghost"
                     size="icon"
                     className="h-9 w-9 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
@@ -477,6 +489,65 @@ export default function DashboardClient({
             ))}
           </ul>
         )}
+
+        {/* Modal de Edição de Tipo de Hidratação */}
+        <Dialog open={!!editingTipoHidratacao} onOpenChange={(open) => {
+          if (!open) setEditingTipoHidratacao(null)
+        }}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Editar Tipo de Hidratação</DialogTitle>
+            </DialogHeader>
+            {editingTipoHidratacao && (
+              <form action={async (formData) => {
+                setIsSavingHidratacao(true)
+                const res = await updateTipoHidratacao(formData)
+                setIsSavingHidratacao(false)
+                if (!res.success) {
+                  toast.error(res.message)
+                } else {
+                  toast.success('Tipo de hidratação atualizado com sucesso!')
+                  setEditingTipoHidratacao(null)
+                  router.refresh()
+                }
+              }} className="space-y-4 pt-4">
+                <input type="hidden" name="id" value={editingTipoHidratacao.id} />
+                
+                <div className="space-y-2">
+                  <Label htmlFor="edit-hid-nome">Nome da hidratação</Label>
+                  <Input
+                    id="edit-hid-nome"
+                    name="nome"
+                    defaultValue={editingTipoHidratacao.nome}
+                    required
+                    className="h-14"
+                    placeholder="Ex: Argan, Queratina, Dermabichos"
+                    autoFocus
+                  />
+                </div>
+
+                <div className="pt-4 flex justify-end gap-3">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setEditingTipoHidratacao(null)}
+                    className="h-12 px-6"
+                    disabled={isSavingHidratacao}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    type="submit"
+                    className="h-12 px-6 font-bold"
+                    disabled={isSavingHidratacao}
+                  >
+                    {isSavingHidratacao ? 'Salvando...' : 'Salvar Alterações'}
+                  </Button>
+                </div>
+              </form>
+            )}
+          </DialogContent>
+        </Dialog>
       </TabsContent>
 
       {/* Checklist View Modal */}
@@ -504,7 +575,7 @@ export default function DashboardClient({
               <div className="space-y-8 px-6 py-6 md:px-8">
                 <dl className="grid grid-cols-1 gap-5 sm:grid-cols-3">
                   <div>
-                    <dt className="text-sm text-muted-foreground">Tutor</dt>
+                    <dt className="text-sm text-muted-foreground">Responsável</dt>
                     <dd className="font-semibold">{selectedChecklist.tutor}</dd>
                   </div>
                   <div>
@@ -534,21 +605,44 @@ export default function DashboardClient({
                     </ul>
                   </DetailBlock>
                   <DetailBlock title="Hidratação">
-                    <ul className="space-y-1.5 text-sm">
-                      <ServiceItem label="Padrão" done={selectedChecklist.hidratacao?.padrao} />
-                      <ServiceItem label="Hipoalergênica" done={selectedChecklist.hidratacao?.hipoalergenico} />
-                    </ul>
-                    {selectedChecklist.hidratacao?.qual && (
-                      <p className="text-sm">Qual: <span className="font-semibold">{selectedChecklist.hidratacao.qual}</span></p>
-                    )}
+                    <p className="text-sm">
+                      Tipo: <span className="font-semibold">{selectedChecklist.hidratacao?.qual || (selectedChecklist.hidratacao?.hipoalergenico ? 'Hipoalergênica' : selectedChecklist.hidratacao?.padrao ? 'Padrão' : 'Nenhuma')}</span>
+                    </p>
                   </DetailBlock>
                 </div>
 
-                {selectedChecklist.observacao && (
+                {(selectedChecklist.observacao || selectedChecklist.observacao_cuidados || selectedChecklist.detalhes?.observacao_cuidados) && (
                   <DetailBlock title="Observações">
-                    <p className="rounded-2xl border-l-4 border-rosa bg-secondary/60 px-5 py-4 leading-relaxed whitespace-pre-line">
-                      {selectedChecklist.observacao}
-                    </p>
+                    {(selectedChecklist.detalhes?.cuidados_medicos || selectedChecklist.cuidados_medicos) ? (
+                      <div className="rounded-2xl border-2 border-red-400 bg-red-50/40 p-4">
+                        <div className="flex items-center gap-2 mb-2 text-red-600 font-bold text-sm">
+                          <CiMedicalCross className="size-4 text-red-600 stroke-[1]" />
+                          Alerta de saúde
+                        </div>
+                        <p className="text-sm text-red-950 font-medium whitespace-pre-line leading-relaxed">
+                          {selectedChecklist.observacao}
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {selectedChecklist.observacao && (
+                          <p className="rounded-2xl border-l-4 border-rosa bg-secondary/60 px-5 py-3.5 leading-relaxed whitespace-pre-line text-sm">
+                            {selectedChecklist.observacao}
+                          </p>
+                        )}
+                        {(selectedChecklist.observacao_cuidados || selectedChecklist.detalhes?.observacao_cuidados) && (
+                          <div className="rounded-2xl border-2 border-red-400 bg-red-50/40 p-4">
+                            <div className="flex items-center gap-2 mb-2 text-red-600 font-bold text-sm">
+                              <CiMedicalCross className="size-4 text-red-600 stroke-[1]" />
+                              Alerta de saúde
+                            </div>
+                            <p className="text-sm text-red-950 font-medium whitespace-pre-line leading-relaxed">
+                              {selectedChecklist.observacao_cuidados || selectedChecklist.detalhes?.observacao_cuidados}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </DetailBlock>
                 )}
 
@@ -560,9 +654,9 @@ export default function DashboardClient({
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img src={url} alt={`Foto ${i + 1} de ${selectedChecklist.pet_nome}`} className="size-full object-cover transition-transform duration-300 group-hover:scale-105" />
                           <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
-                            <Button 
-                              variant="secondary" 
-                              size="icon" 
+                            <Button
+                              variant="secondary"
+                              size="icon"
                               className="size-12 rounded-full shadow-lg"
                               onClick={() => setPhotoPreviewUrl(url)}
                             >
@@ -575,7 +669,7 @@ export default function DashboardClient({
                   </DetailBlock>
                 )}
 
-                <DetailBlock title="Assinatura do tutor">
+                <DetailBlock title="Assinatura do responsável">
                   {selectedChecklist.assinatura_url && (
                     <img src={selectedChecklist.assinatura_url} alt={`Assinatura de ${selectedChecklist.tutor}`} className="h-32 rounded-2xl border border-border bg-white object-contain px-4" />
                   )}
@@ -593,9 +687,9 @@ export default function DashboardClient({
             <div className="relative flex w-full flex-col items-center justify-center">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={photoPreviewUrl} alt="Foto ampliada" className="max-h-[85vh] w-auto max-w-full rounded-2xl object-contain shadow-2xl" />
-              <Button 
-                variant="outline" 
-                size="icon" 
+              <Button
+                variant="outline"
+                size="icon"
                 className="absolute top-3 right-3 size-10 rounded-full bg-white/80 backdrop-blur-sm shadow-md hover:bg-white"
                 onClick={() => setPhotoPreviewUrl(null)}
               >

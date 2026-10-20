@@ -80,6 +80,8 @@ export interface Database {
             perfume: boolean
             escova_dente: boolean
             outros: string
+            observacao_cuidados?: string | null
+            cuidados_medicos?: boolean | null
           } | null
           tosa: {
             higienica: boolean
@@ -91,6 +93,8 @@ export interface Database {
             hipoalergenico: boolean
             qual: string
           } | null
+          observacao_cuidados?: string | null
+          cuidados_medicos?: boolean | null
           observacao: string | null
           realizado_por_id: string | null
           vistoriado_por_id: string | null
@@ -114,6 +118,8 @@ export interface Database {
             perfume: boolean
             escova_dente: boolean
             outros: string
+            observacao_cuidados?: string | null
+            cuidados_medicos?: boolean | null
           } | null
           tosa?: {
             higienica: boolean
@@ -125,6 +131,8 @@ export interface Database {
             hipoalergenico: boolean
             qual: string
           } | null
+          observacao_cuidados?: string | null
+          cuidados_medicos?: boolean | null
           observacao?: string | null
           realizado_por_id?: string | null
           vistoriado_por_id?: string | null
@@ -148,6 +156,8 @@ export interface Database {
             perfume: boolean
             escova_dente: boolean
             outros: string
+            observacao_cuidados?: string | null
+            cuidados_medicos?: boolean | null
           } | null
           tosa?: {
             higienica: boolean
@@ -159,6 +169,8 @@ export interface Database {
             hipoalergenico: boolean
             qual: string
           } | null
+          observacao_cuidados?: string | null
+          cuidados_medicos?: boolean | null
           observacao?: string | null
           realizado_por_id?: string | null
           vistoriado_por_id?: string | null

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { toast } from 'react-toastify'
+import { CiMedicalCross } from 'react-icons/ci'
 
 function Box({ checked, label }: { checked?: boolean; label: string }) {
   return (
@@ -51,12 +52,12 @@ export default function PrintClient({ checklist, funcionarios }: { checklist: an
         html2canvas: { scale: 2, useCORS: true, allowTaint: true },
         jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' as const }
       }
-      
+
       const worker = html2pdf().set(opt).from(element)
       const pdfBlob = await worker.output('blob')
-      
+
       const file = new File([pdfBlob], opt.filename, { type: 'application/pdf' })
-      
+
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
         await navigator.share({
           files: [file],
@@ -97,7 +98,7 @@ export default function PrintClient({ checklist, funcionarios }: { checklist: an
             >
               <span className="font-heading text-2xl leading-none">×</span>
             </button>
-            <button 
+            <button
               onClick={sharePdf}
               disabled={isGenerating}
               className="h-12 px-6 rounded-xl bg-rosa text-white font-bold hover:bg-rosa/90 disabled:opacity-50 transition-colors"
@@ -151,7 +152,7 @@ export default function PrintClient({ checklist, funcionarios }: { checklist: an
             <dd className="font-semibold">{checklist.pet_nome}</dd>
           </div>
           <div>
-            <dt className="text-xs text-[#6b7280]">Tutor</dt>
+            <dt className="text-xs text-[#6b7280]">Responsável</dt>
             <dd className="font-semibold">{checklist.tutor}</dd>
           </div>
           <div>
@@ -186,11 +187,9 @@ export default function PrintClient({ checklist, funcionarios }: { checklist: an
             </div>
             <div>
               <h3 className="mb-2 font-semibold text-[#2b6a92]">Hidratação</h3>
-              <ul className="space-y-1">
-                <Box checked={checklist.hidratacao?.padrao} label="Padrão" />
-                <Box checked={checklist.hidratacao?.hipoalergenico} label="Hipoalergênica" />
-                {checklist.hidratacao?.qual && <li className="mt-1"><strong>Qual:</strong> {checklist.hidratacao.qual}</li>}
-              </ul>
+              <p className="text-sm">
+                <strong>Tipo:</strong> {checklist.hidratacao?.qual || (checklist.hidratacao?.hipoalergenico ? 'Hipoalergênica' : checklist.hidratacao?.padrao ? 'Padrão' : 'Nenhuma')}
+              </p>
             </div>
           </div>
         </section>
@@ -203,10 +202,40 @@ export default function PrintClient({ checklist, funcionarios }: { checklist: an
           </div>
         </section>
 
-        {checklist.observacao && (
+        {(checklist.observacao || checklist.observacao_cuidados || checklist.detalhes?.observacao_cuidados) && (
           <section className="mb-6">
             <h2 className="mb-3 border-b border-[#d1d5db] pb-1 text-base font-bold">Observações</h2>
-            <p className="min-h-16 border-l-4 border-[#cd8da7] bg-[#f9fafb] px-4 py-3 text-sm whitespace-pre-line">{checklist.observacao}</p>
+            <div className="space-y-3">
+              {(checklist.detalhes?.cuidados_medicos || checklist.cuidados_medicos) ? (
+                <div>
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-red-600 uppercase mb-1">
+                    <CiMedicalCross className="size-4 text-red-600" />
+                    Alerta de saúde
+                  </div>
+                  <p className="border-l-4 border-red-500 bg-red-50/60 px-4 py-2.5 text-sm font-medium text-red-950 whitespace-pre-line rounded-r">
+                    {checklist.observacao}
+                  </p>
+                </div>
+              ) : (
+                checklist.observacao && (
+                  <p className="border-l-4 border-[#cd8da7] bg-[#f9fafb] px-4 py-2.5 text-sm whitespace-pre-line rounded-r">
+                    {checklist.observacao}
+                  </p>
+                )
+              )}
+
+              {(checklist.observacao_cuidados || checklist.detalhes?.observacao_cuidados) && !(checklist.detalhes?.cuidados_medicos || checklist.cuidados_medicos) && (
+                <div>
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-red-600 uppercase mb-1">
+                    <CiMedicalCross className="size-4 text-red-600" />
+                    Alerta de saúde
+                  </div>
+                  <p className="border-l-4 border-red-500 bg-red-50/60 px-4 py-2.5 text-sm font-medium text-red-950 whitespace-pre-line rounded-r">
+                    {checklist.observacao_cuidados || checklist.detalhes?.observacao_cuidados}
+                  </p>
+                </div>
+              )}
+            </div>
           </section>
         )}
 
@@ -229,7 +258,7 @@ export default function PrintClient({ checklist, funcionarios }: { checklist: an
             <div className="mt-8 flex flex-col items-center justify-center">
               <div className="w-64 border-t border-black"></div>
               <p className="mt-1 text-sm font-bold">{checklist.tutor}</p>
-              <p className="text-[11px] text-[#6b7280]">Assinatura do tutor</p>
+              <p className="text-[11px] text-[#6b7280]">Assinatura do responsável</p>
             </div>
           )}
         </div>

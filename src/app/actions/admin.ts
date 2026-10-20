@@ -135,6 +135,27 @@ export async function toggleTipoHidratacao(id: string, currentStatus: boolean) {
   const supabase = await createClient()
   await supabase.from('tipos_hidratacao').update({ ativo: !currentStatus }).eq('id', id)
   revalidatePath('/admin/dashboard')
+  revalidatePath('/checklist')
+  revalidatePath('/')
+}
+
+export async function updateTipoHidratacao(formData: FormData) {
+  const id = formData.get('id') as string
+  const nome = (formData.get('nome') as string)?.trim()
+
+  if (!id || !nome) {
+    return { success: false, message: 'O nome da hidratação é obrigatório' }
+  }
+
+  const supabase = await createClient()
+  const { error } = await supabase.from('tipos_hidratacao').update({ nome }).eq('id', id)
+
+  if (error) return { success: false, message: error.message }
+
+  revalidatePath('/admin/dashboard')
+  revalidatePath('/checklist')
+  revalidatePath('/')
+  return { success: true }
 }
 
 export async function deleteChecklist(id: string) {

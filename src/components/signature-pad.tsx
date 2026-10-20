@@ -77,7 +77,7 @@ export function SignaturePad({ onEnd, error, value, readOnly }: SignaturePadProp
           penColor="#1b3244"
           canvasProps={{
             className: `relative w-full h-56 rounded-2xl touch-none ${readOnly ? 'pointer-events-none' : ''}`,
-            'aria-label': 'Área de assinatura do tutor',
+            'aria-label': 'Área de assinatura do responsável',
           }}
           onEnd={handleEnd}
         />
