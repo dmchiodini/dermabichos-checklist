@@ -34,42 +34,119 @@ export default function PrintClient({ checklist, funcionarios }: { checklist: an
     }
   }, [searchParams])
 
+  const downloadBlob = (blob: Blob, filename: string) => {
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = filename
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    setTimeout(() => URL.revokeObjectURL(url), 2000)
+  }
+
+  const generatePdf = async () => {
+    const html2canvas = (await import('html2canvas-pro')).default
+    const { jsPDF } = await import('jspdf')
+    const element = document.getElementById('printable-area')
+    if (!element) {
+      throw new Error('Não foi possível encontrar o conteúdo para gerar o PDF.')
+    }
+
+    const canvas = await html2canvas(element, {
+      scale: 2,
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: '#ffffff',
+      logging: false,
+    })
+
+    const imgData = canvas.toDataURL('image/jpeg', 0.98)
+    const pdf = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4',
+    })
+
+    const pageWidth = pdf.internal.pageSize.getWidth()
+    const pageHeight = pdf.internal.pageSize.getHeight()
+
+    const margin = 10
+    const printWidth = pageWidth - (margin * 2)
+    const printHeight = (canvas.height * printWidth) / canvas.width
+
+    if (printHeight <= pageHeight - (margin * 2)) {
+      pdf.addImage(imgData, 'JPEG', margin, margin, printWidth, printHeight)
+    } else {
+      let heightLeft = printHeight
+      let position = margin
+
+      pdf.addImage(imgData, 'JPEG', margin, position, printWidth, printHeight)
+      heightLeft -= (pageHeight - margin)
+
+      while (heightLeft > 0) {
+        position = heightLeft - printHeight + margin
+        pdf.addPage()
+        pdf.addImage(imgData, 'JPEG', margin, position, printWidth, printHeight)
+        heightLeft -= (pageHeight - (margin * 2))
+      }
+    }
+
+    const filename = `Checklist_${checklist.pet_nome.replace(/\s+/g, '_')}.pdf`
+    const pdfBlob = pdf.output('blob')
+    return { pdf, pdfBlob, filename }
+  }
+
   const sharePdf = async () => {
     setIsGenerating(true)
+    let pdfData: { pdf: any; pdfBlob: Blob; filename: string } | null = null
+
     try {
-      const html2pdf = (await import('html2pdf.js')).default
-      const element = document.getElementById('printable-area')
-      if (!element) {
-        toast.error('Erro: não foi possível encontrar o conteúdo para gerar o PDF.')
-        setIsGenerating(false)
-        return
-      }
+      pdfData = await generatePdf()
+      const { pdfBlob, filename } = pdfData
+      const file = new File([pdfBlob], filename, { type: 'application/pdf' })
 
-      const opt = {
-        margin: 0.5,
-        filename: `Checklist_${checklist.pet_nome.replace(/\s+/g, '_')}.pdf`,
-        image: { type: 'jpeg' as const, quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, allowTaint: true },
-        jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' as const }
-      }
-
-      const worker = html2pdf().set(opt).from(element)
-      const pdfBlob = await worker.output('blob')
-
-      const file = new File([pdfBlob], opt.filename, { type: 'application/pdf' })
-
-      if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        await navigator.share({
-          files: [file],
-          title: `Checklist Dermabichos - ${checklist.pet_nome}`,
-          text: `Segue em anexo o checklist do pet ${checklist.pet_nome}.`
-        })
-        // Don't route back automatically so they can see the doc if they want, or we can close the window
+      if (typeof navigator !== 'undefined' && navigator.canShare && navigator.canShare({ files: [file] })) {
+        try {
+          await navigator.share({
+            files: [file],
+            title: `Checklist Dermabichos - ${checklist.pet_nome}`,
+            text: `Segue em anexo o checklist do pet ${checklist.pet_nome}.`
+          })
+          toast.success('Checklist compartilhado com sucesso!')
+        } catch (shareErr: any) {
+          console.warn('Erro ou cancelamento no compartilhamento:', shareErr)
+          // Mesmo dando erro ou cancelamento no compartilhamento, baixa o PDF!
+          downloadBlob(pdfBlob, filename)
+          if (shareErr.name !== 'AbortError') {
+            toast.info('Não foi possível abrir o compartilhamento direto, mas o PDF foi baixado com sucesso!')
+          }
+        }
       } else {
-        // Fallback for desktops
-        await worker.save()
+        // Dispositivos sem suporte a compartilhamento direto de arquivos
+        downloadBlob(pdfBlob, filename)
         toast.success('PDF baixado com sucesso! Você pode enviá-lo pelo WhatsApp Web.')
       }
+    } catch (error: any) {
+      console.error(error)
+      // Se o PDF já foi gerado, garante o download mesmo se houver erro
+      if (pdfData) {
+        downloadBlob(pdfData.pdfBlob, pdfData.filename)
+        toast.info('Erro no compartilhamento, mas o PDF foi baixado com sucesso.')
+      } else {
+        toast.error('Erro ao gerar documento: ' + (error.message || 'Desconhecido'))
+      }
+    } finally {
+      setIsGenerating(false)
+    }
+  }
+
+  const handleDownloadOnly = async () => {
+    setIsGenerating(true)
+    try {
+      const { pdfBlob, filename } = await generatePdf()
+      downloadBlob(pdfBlob, filename)
+      toast.success('PDF baixado com sucesso!')
     } catch (error: any) {
       console.error(error)
       toast.error('Erro ao gerar documento: ' + (error.message || 'Desconhecido'))
@@ -99,11 +176,18 @@ export default function PrintClient({ checklist, funcionarios }: { checklist: an
               <span className="font-heading text-2xl leading-none">×</span>
             </button>
             <button
+              onClick={handleDownloadOnly}
+              disabled={isGenerating}
+              className="h-12 px-5 rounded-xl border border-border bg-white text-[#1b3244] font-semibold hover:bg-muted disabled:opacity-50 transition-colors"
+            >
+              Baixar PDF
+            </button>
+            <button
               onClick={sharePdf}
               disabled={isGenerating}
               className="h-12 px-6 rounded-xl bg-rosa text-white font-bold hover:bg-rosa/90 disabled:opacity-50 transition-colors"
             >
-              {isGenerating ? 'Gerando...' : 'Gerar e Compartilhar'}
+              {isGenerating ? 'Gerando...' : 'Compartilhar'}
             </button>
           </div>
         </div>
@@ -161,7 +245,7 @@ export default function PrintClient({ checklist, funcionarios }: { checklist: an
           </div>
           <div>
             <dt className="text-xs text-[#6b7280]">Data</dt>
-            <dd className="font-semibold">{new Date(checklist.created_at).toLocaleString('pt-BR')}</dd>
+            <dd className="font-semibold" suppressHydrationWarning>{new Date(checklist.created_at).toLocaleString('pt-BR')}</dd>
           </div>
         </dl>
 
@@ -208,11 +292,11 @@ export default function PrintClient({ checklist, funcionarios }: { checklist: an
             <div className="space-y-3">
               {(checklist.detalhes?.cuidados_medicos || checklist.cuidados_medicos) ? (
                 <div>
-                  <div className="flex items-center gap-1.5 text-xs font-bold text-red-600 uppercase mb-1">
-                    <CiMedicalCross className="size-4 text-red-600" />
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-[#dc2626] uppercase mb-1">
+                    <CiMedicalCross className="size-4 text-[#dc2626]" />
                     Alerta de saúde
                   </div>
-                  <p className="border-l-4 border-red-500 bg-red-50/60 px-4 py-2.5 text-sm font-medium text-red-950 whitespace-pre-line rounded-r">
+                  <p className="border-l-4 border-[#ef4444] bg-[#fef2f2] px-4 py-2.5 text-sm font-medium text-[#450a0a] whitespace-pre-line rounded-r">
                     {checklist.observacao}
                   </p>
                 </div>
@@ -226,11 +310,11 @@ export default function PrintClient({ checklist, funcionarios }: { checklist: an
 
               {(checklist.observacao_cuidados || checklist.detalhes?.observacao_cuidados) && !(checklist.detalhes?.cuidados_medicos || checklist.cuidados_medicos) && (
                 <div>
-                  <div className="flex items-center gap-1.5 text-xs font-bold text-red-600 uppercase mb-1">
-                    <CiMedicalCross className="size-4 text-red-600" />
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-[#dc2626] uppercase mb-1">
+                    <CiMedicalCross className="size-4 text-[#dc2626]" />
                     Alerta de saúde
                   </div>
-                  <p className="border-l-4 border-red-500 bg-red-50/60 px-4 py-2.5 text-sm font-medium text-red-950 whitespace-pre-line rounded-r">
+                  <p className="border-l-4 border-[#ef4444] bg-[#fef2f2] px-4 py-2.5 text-sm font-medium text-[#450a0a] whitespace-pre-line rounded-r">
                     {checklist.observacao_cuidados || checklist.detalhes?.observacao_cuidados}
                   </p>
                 </div>

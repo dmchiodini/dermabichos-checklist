@@ -139,15 +139,16 @@ export default function DashboardOverview() {
           </CardHeader>
           <CardContent className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={stats?.volumeDiario}>
+              <BarChart data={stats?.volumeDiario} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
                 <XAxis dataKey="dia" axisLine={false} tickLine={false} tick={{fill: '#6b7280', fontSize: 12}} dy={10} />
-                <YAxis axisLine={false} tickLine={false} tick={{fill: '#6b7280', fontSize: 12}} />
+                <YAxis axisLine={false} tickLine={false} tick={{fill: '#6b7280', fontSize: 12}} allowDecimals={false} />
                 <Tooltip 
+                  cursor={{ fill: 'rgba(0, 0, 0, 0.04)' }}
                   contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}}
                 />
-                <Line type="monotone" dataKey="total" name="Banhos" stroke="#3f8ab3" strokeWidth={4} dot={{r: 4, fill: '#3f8ab3'}} activeDot={{r: 6}} />
-              </LineChart>
+                <Bar dataKey="total" name="Banhos" fill="#1f77b4" radius={[4, 4, 0, 0]} maxBarSize={40} />
+              </BarChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
