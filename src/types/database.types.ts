@@ -92,6 +92,7 @@ export interface Database {
             padrao: boolean
             hipoalergenico: boolean
             qual: string
+            shampoo_terapeutico?: boolean
           } | null
           observacao_cuidados?: string | null
           cuidados_medicos?: boolean | null
@@ -130,6 +131,7 @@ export interface Database {
             padrao: boolean
             hipoalergenico: boolean
             qual: string
+            shampoo_terapeutico?: boolean
           } | null
           observacao_cuidados?: string | null
           cuidados_medicos?: boolean | null
@@ -168,6 +170,7 @@ export interface Database {
             padrao: boolean
             hipoalergenico: boolean
             qual: string
+            shampoo_terapeutico?: boolean
           } | null
           observacao_cuidados?: string | null
           cuidados_medicos?: boolean | null

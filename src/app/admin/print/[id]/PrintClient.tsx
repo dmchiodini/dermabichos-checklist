@@ -270,10 +270,15 @@ export default function PrintClient({ checklist, funcionarios }: { checklist: an
               </ul>
             </div>
             <div>
-              <h3 className="mb-2 font-semibold text-[#2b6a92]">Hidratação</h3>
+              <h3 className="mb-2 font-semibold text-[#2b6a92]">Banho / Hidratação</h3>
               <p className="text-sm">
                 <strong>Tipo:</strong> {checklist.hidratacao?.qual || (checklist.hidratacao?.hipoalergenico ? 'Hipoalergênica' : checklist.hidratacao?.padrao ? 'Padrão' : 'Nenhuma')}
               </p>
+              {checklist.hidratacao?.shampoo_terapeutico && (
+                <ul className="mt-1 space-y-1">
+                  <Box checked={true} label="Shampoo terapêutico" />
+                </ul>
+              )}
             </div>
           </div>
         </section>

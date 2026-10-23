@@ -604,10 +604,15 @@ export default function DashboardClient({
                       <ServiceItem label="Tesoura" done={selectedChecklist.tosa?.tesoura} />
                     </ul>
                   </DetailBlock>
-                  <DetailBlock title="Hidratação">
+                  <DetailBlock title="Banho / Hidratação">
                     <p className="text-sm">
                       Tipo: <span className="font-semibold">{selectedChecklist.hidratacao?.qual || (selectedChecklist.hidratacao?.hipoalergenico ? 'Hipoalergênica' : selectedChecklist.hidratacao?.padrao ? 'Padrão' : 'Nenhuma')}</span>
                     </p>
+                    {selectedChecklist.hidratacao?.shampoo_terapeutico && (
+                      <ul className="mt-2 space-y-1 text-sm">
+                        <ServiceItem label="Shampoo terapêutico" done={true} />
+                      </ul>
+                    )}
                   </DetailBlock>
                 </div>
 

@@ -35,7 +35,7 @@ const dogBreeds = [
   "Jack Russell Terrier", "Labrador Retriever", "Lhasa Apso", "Maltês", "Papillon",
   "Pastor Alemão", "Pastor Belga", "Pastor Branco Suíço", "Pequinês", "Pinscher", "Pit Bull",
   "Poodle", "Pug", "Rottweiler", "São Bernardo", "Schnauzer", "Shar-Pei", "Shih Tzu",
-  "Spitz Alemão (Lulu da Pomerânia)", "Yorkshire Terrier"
+  "Spitz Alemão (Lulu da Pomerânia)", "West Terrier", "Yorkshire Terrier"
 ]
 
 const catBreeds = [
@@ -68,7 +68,7 @@ const serviceGroups = [
 
 const fieldLabel = 'text-base font-semibold text-foreground'
 const fieldError = 'text-sm font-medium text-destructive'
-const selectTrigger = 'h-14 data-[size=default]:h-14 w-full text-base bg-white'
+const selectTrigger = 'h-14 data-[size=default]:h-14 w-full min-w-0 max-w-full text-base bg-white'
 
 function StepHeading({ step, title, hint }: { step: number; title: string; hint?: string }) {
   return (
@@ -91,9 +91,9 @@ function ServiceToggle({ id, label, checked, onCheckedChange }: {
   onCheckedChange: (checked: boolean) => void
 }) {
   return (
-    <div className="flex items-center gap-3 rounded-xl border border-border bg-white pl-4 transition-colors has-data-checked:border-ceu has-data-checked:bg-accent">
-      <Checkbox id={id} checked={checked} onCheckedChange={onCheckedChange} className="size-6 rounded-md border-input" />
-      <Label htmlFor={id} className="flex-1 cursor-pointer self-stretch py-4 pr-4 text-base font-medium leading-snug">
+    <div className="flex items-center gap-3 rounded-xl border border-border bg-white pl-4 transition-colors has-data-checked:border-ceu has-data-checked:bg-accent min-w-0 max-w-full">
+      <Checkbox id={id} checked={checked} onCheckedChange={onCheckedChange} className="size-6 shrink-0 rounded-md border-input" />
+      <Label htmlFor={id} className="flex-1 cursor-pointer self-stretch py-4 pr-4 text-base font-medium leading-snug break-words min-w-0">
         {label}
       </Label>
     </div>
@@ -144,6 +144,7 @@ export default function TabletClient({ user, isRecepcao = true }: { user?: any, 
       },
       hidratacao: {
         qual: '',
+        shampoo_terapeutico: false,
       },
       cuidados_medicos: false,
       observacao: '',
@@ -249,7 +250,7 @@ export default function TabletClient({ user, isRecepcao = true }: { user?: any, 
         name={name}
         control={control}
         render={({ field }) => (
-          <Select onValueChange={field.onChange} value={field.value || undefined}>
+          <Select onValueChange={(val) => field.onChange(val || null)} value={field.value || null}>
             <SelectTrigger className={selectTrigger} aria-invalid={!!errors[name]}>
               <SelectValue placeholder={placeholder}>
                 {field.value ? funcionarios.find(f => f.id === field.value)?.nome : undefined}
@@ -321,7 +322,7 @@ export default function TabletClient({ user, isRecepcao = true }: { user?: any, 
                       name="especie"
                       control={control}
                       render={({ field }) => (
-                        <Select onValueChange={field.onChange} value={field.value || undefined}>
+                        <Select onValueChange={(val) => field.onChange(val || '')} value={field.value || null}>
                           <SelectTrigger className={selectTrigger}>
                             <SelectValue placeholder="Selecione..." />
                           </SelectTrigger>
@@ -405,7 +406,7 @@ export default function TabletClient({ user, isRecepcao = true }: { user?: any, 
                 <StepHeading step={2} title="Serviços" hint="Toque em tudo o que será feito neste atendimento." />
                 <div className="grid grid-cols-1 gap-8 md:grid-cols-3 md:gap-5">
                   {serviceGroups.map((group) => (
-                    <fieldset key={group.title} className="space-y-3">
+                    <fieldset key={group.title} className="space-y-3 min-w-0">
                       <legend className="mb-3 font-heading text-lg font-semibold text-ceu-deep">{group.title}</legend>
                       {group.options.map((opt) => (
                         <Controller
@@ -420,20 +421,19 @@ export default function TabletClient({ user, isRecepcao = true }: { user?: any, 
                     </fieldset>
                   ))}
 
-                  <fieldset className="space-y-3">
+                  <fieldset className="space-y-3 min-w-0">
                     <legend className="mb-3 font-heading text-lg font-semibold text-ceu-deep">Banho / Hidratação</legend>
-                    <div className="space-y-2">
-                      {/* <Label htmlFor="hid_qual" className="text-sm font-medium text-muted-foreground">Qual hidratação</Label> */}
+                    <div className="space-y-3 min-w-0">
                       <Controller
                         name="hidratacao.qual"
                         control={control}
                         render={({ field }) => (
                           <Select
-                            onValueChange={field.onChange}
-                            value={field.value || undefined}
+                            onValueChange={(val) => field.onChange(val || '')}
+                            value={field.value || null}
                           >
-                            <SelectTrigger id="hid_qual" className={selectTrigger}>
-                              <SelectValue placeholder="Selecione" />
+                            <SelectTrigger id="hid_qual" className={cn(selectTrigger, "truncate")} title={field.value || undefined}>
+                              <SelectValue placeholder="Selecione" className="truncate" />
                             </SelectTrigger>
                             <SelectContent>
                               {hidratacoes.map((hid) => (
@@ -442,6 +442,19 @@ export default function TabletClient({ user, isRecepcao = true }: { user?: any, 
                               {hidratacoes.length === 0 && <SelectItem value="Padrao">Cadastre no painel admin</SelectItem>}
                             </SelectContent>
                           </Select>
+                        )}
+                      />
+
+                      <Controller
+                        name="hidratacao.shampoo_terapeutico"
+                        control={control}
+                        render={({ field }) => (
+                          <ServiceToggle
+                            id="shampoo_terapeutico"
+                            label="Shampoo terapêutico"
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
                         )}
                       />
                     </div>

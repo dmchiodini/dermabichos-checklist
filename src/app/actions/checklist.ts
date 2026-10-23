@@ -105,7 +105,8 @@ export async function submitChecklist(data: ChecklistFormValues, fotosFormData: 
       hidratacao: {
         padrao: data.hidratacao?.padrao || false,
         hipoalergenico: data.hidratacao?.hipoalergenico || false,
-        qual: data.hidratacao?.qual || ''
+        qual: data.hidratacao?.qual || '',
+        shampoo_terapeutico: Boolean(data.hidratacao?.shampoo_terapeutico)
       },
       observacao: data.observacao || null,
       realizado_por_id: data.realizado_por_id || null,

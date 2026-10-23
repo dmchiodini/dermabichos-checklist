@@ -131,25 +131,52 @@ export default function DashboardOverview() {
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="col-span-1 lg:col-span-2 rounded-2xl border-none shadow-sm bg-white">
+      {/* Volume de Banhos ocupando a largura total */}
+      <Card className="rounded-2xl border-none shadow-sm bg-white">
+        <CardHeader>
+          <CardTitle>Volume de Banhos</CardTitle>
+          <CardDescription>Quantidade de checklists ao longo do período selecionado</CardDescription>
+        </CardHeader>
+        <CardContent className="h-[320px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={stats?.volumeDiario} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+              <XAxis dataKey="dia" axisLine={false} tickLine={false} tick={{fill: '#6b7280', fontSize: 12}} dy={10} />
+              <YAxis axisLine={false} tickLine={false} tick={{fill: '#6b7280', fontSize: 12}} allowDecimals={false} />
+              <Tooltip 
+                cursor={{ fill: 'rgba(0, 0, 0, 0.04)' }}
+                contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}}
+              />
+              <Bar dataKey="total" name="Banhos" fill="#1f77b4" radius={[4, 4, 0, 0]} maxBarSize={40} />
+            </BarChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
+
+      {/* Ranking de Funcionários e Status lado a lado */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card className="rounded-2xl border-none shadow-sm bg-white">
           <CardHeader>
-            <CardTitle>Volume de Banhos</CardTitle>
-            <CardDescription>Quantidade de checklists ao longo do período selecionado</CardDescription>
+            <CardTitle>Ranking de Funcionários (Operacional)</CardTitle>
+            <CardDescription>Quantidade de banhos finalizados por funcionário</CardDescription>
           </CardHeader>
-          <CardContent className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={stats?.volumeDiario} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
-                <XAxis dataKey="dia" axisLine={false} tickLine={false} tick={{fill: '#6b7280', fontSize: 12}} dy={10} />
-                <YAxis axisLine={false} tickLine={false} tick={{fill: '#6b7280', fontSize: 12}} allowDecimals={false} />
-                <Tooltip 
-                  cursor={{ fill: 'rgba(0, 0, 0, 0.04)' }}
-                  contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}}
-                />
-                <Bar dataKey="total" name="Banhos" fill="#1f77b4" radius={[4, 4, 0, 0]} maxBarSize={40} />
-              </BarChart>
-            </ResponsiveContainer>
+          <CardContent className="h-[350px]">
+            {stats && stats.porFuncionario.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={stats.porFuncionario} layout="vertical" margin={{top: 5, right: 30, left: 20, bottom: 5}}>
+                  <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#e5e7eb" />
+                  <XAxis type="number" axisLine={false} tickLine={false} tick={{fill: '#6b7280'}} />
+                  <YAxis dataKey="nome" type="category" axisLine={false} tickLine={false} tick={{fill: '#1b3244', fontWeight: 600}} width={120} />
+                  <Tooltip 
+                    cursor={{fill: '#f3f4f6'}}
+                    contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}}
+                  />
+                  <Bar dataKey="finalizados" name="Finalizados" fill="#e6789e" radius={[0, 4, 4, 0]} barSize={32} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+               <div className="h-full flex items-center justify-center text-muted-foreground">Nenhum funcionário operacional realizou banhos neste período.</div>
+            )}
           </CardContent>
         </Card>
 
@@ -158,56 +185,45 @@ export default function DashboardOverview() {
             <CardTitle>Status</CardTitle>
             <CardDescription>Proporção de concluídos</CardDescription>
           </CardHeader>
-          <CardContent className="h-[300px] flex items-center justify-center">
+          <CardContent className="h-[350px] flex flex-col items-center justify-center">
             {stats && stats.total > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={statusData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={90}
-                    paddingAngle={5}
-                    dataKey="value"
-                  >
-                    <Cell fill="#16a34a" /> {/* Green */}
-                    <Cell fill="#f59e0b" /> {/* Amber */}
-                  </Pie>
-                  <Tooltip contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}} />
-                </PieChart>
-              </ResponsiveContainer>
+              <>
+                <div className="w-full h-[260px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={statusData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={65}
+                        outerRadius={95}
+                        paddingAngle={5}
+                        dataKey="value"
+                      >
+                        <Cell fill="#16a34a" /> {/* Green */}
+                        <Cell fill="#f59e0b" /> {/* Amber */}
+                      </Pie>
+                      <Tooltip contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="flex items-center justify-center gap-6 text-sm font-semibold mt-2">
+                  <div className="flex items-center gap-2 text-green-700">
+                    <span className="size-3 rounded-full bg-green-600 inline-block" />
+                    <span>Finalizados ({stats.finalizados})</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-amber-700">
+                    <span className="size-3 rounded-full bg-amber-500 inline-block" />
+                    <span>Em andamento ({stats.abertos})</span>
+                  </div>
+                </div>
+              </>
             ) : (
               <div className="text-muted-foreground text-center">Sem dados no período</div>
             )}
           </CardContent>
         </Card>
       </div>
-
-      <Card className="rounded-2xl border-none shadow-sm bg-white">
-        <CardHeader>
-          <CardTitle>Ranking de Funcionários (Operacional)</CardTitle>
-          <CardDescription>Quantidade de banhos finalizados por funcionário</CardDescription>
-        </CardHeader>
-        <CardContent className="h-[350px]">
-          {stats && stats.porFuncionario.length > 0 ? (
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={stats.porFuncionario} layout="vertical" margin={{top: 5, right: 30, left: 20, bottom: 5}}>
-                <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#e5e7eb" />
-                <XAxis type="number" axisLine={false} tickLine={false} tick={{fill: '#6b7280'}} />
-                <YAxis dataKey="nome" type="category" axisLine={false} tickLine={false} tick={{fill: '#1b3244', fontWeight: 600}} width={120} />
-                <Tooltip 
-                  cursor={{fill: '#f3f4f6'}}
-                  contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}}
-                />
-                <Bar dataKey="finalizados" name="Finalizados" fill="#e6789e" radius={[0, 4, 4, 0]} barSize={32} />
-              </BarChart>
-            </ResponsiveContainer>
-          ) : (
-             <div className="h-full flex items-center justify-center text-muted-foreground">Nenhum funcionário operacional realizou banhos neste período.</div>
-          )}
-        </CardContent>
-      </Card>
 
     </div>
   )

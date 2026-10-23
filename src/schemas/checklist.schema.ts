@@ -26,7 +26,8 @@ export const checklistSchema = z.object({
   hidratacao: z.object({
     padrao: z.boolean().optional().default(false),
     hipoalergenico: z.boolean().optional().default(false),
-    qual: z.string().nullable().optional()
+    qual: z.string().nullable().optional(),
+    shampoo_terapeutico: z.boolean().optional().default(false)
   }),
 
   cuidados_medicos: z.boolean().optional().default(false),
