@@ -4,12 +4,15 @@ import React, { useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Plus, Clock, Play, CheckCircle2, ChevronRight, ShowerHead, Share2, Search, Calendar, User, RefreshCw } from 'lucide-react'
+import { Plus, Clock, Play, CheckCircle2, ChevronRight, ShowerHead, Share2, Search, Calendar, User, RefreshCw, Trash2 } from 'lucide-react'
 import { CiMedicalCross } from 'react-icons/ci'
 import { toast } from 'react-toastify'
-import { updateChecklistStatus, getFilteredChecklists } from '@/app/actions/checklist'
+import { updateChecklistStatus, getFilteredChecklists, softDeleteChecklist } from '@/app/actions/checklist'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { cn } from '@/lib/utils'
 import { logoutFuncionario } from '@/app/actions/auth'
 
@@ -21,6 +24,9 @@ export default function FilaClient({ initialChecklists, user }: { initialCheckli
   })
 
   const [checklists, setChecklists] = useState(initialChecklists)
+  const [checklistToDelete, setChecklistToDelete] = useState<any | null>(null)
+  const [motivoExclusao, setMotivoExclusao] = useState('')
+  const [isDeleting, setIsDeleting] = useState(false)
   const router = useRouter()
   
   const isRecepcao = user.role === 'recepcao' || user.cargo?.toLowerCase() === 'recepção' || user.cargo?.toLowerCase() === 'recepcao'
@@ -193,9 +199,26 @@ export default function FilaClient({ initialChecklists, user }: { initialCheckli
                       <StatusIcon className="size-4" />
                       {checklist.status || 'Aguardando'}
                     </div>
-                    <span className="text-xs font-medium text-muted-foreground">
-                      {new Date(checklist.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-medium text-muted-foreground">
+                        {new Date(checklist.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                      {isRecepcao && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setChecklistToDelete(checklist)
+                            setMotivoExclusao('')
+                          }}
+                          className="p-1 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                          title="Excluir checklist da fila"
+                          aria-label={`Excluir checklist de ${checklist.pet_nome}`}
+                        >
+                          <Trash2 className="size-4" />
+                        </button>
+                      )}
+                    </div>
                   </div>
                   
                   <h3 className="text-xl font-bold leading-tight mb-1">{checklist.pet_nome}</h3>
@@ -240,6 +263,17 @@ export default function FilaClient({ initialChecklists, user }: { initialCheckli
                         className="text-green-700 border-green-300 hover:bg-green-100"
                       >
                         <CheckCircle2 className="size-4 mr-1" /> Banho Concluído
+                      </Button>
+                    )}
+                    {checklist.status === 'Banho finalizado' && isRecepcao && (
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        onClick={() => handleStatusChange(checklist.id, 'Finalizado')}
+                        className="text-green-700 border-green-300 hover:bg-green-100 font-semibold"
+                        title="Finalizar atendimento diretamente"
+                      >
+                        <CheckCircle2 className="size-4 mr-1" /> Concluir
                       </Button>
                     )}
                   </div>
@@ -289,6 +323,85 @@ export default function FilaClient({ initialChecklists, user }: { initialCheckli
             </div>
           )}
         </div>
+
+        {/* Modal de Confirmação de Exclusão (Recepção) */}
+        <Dialog open={!!checklistToDelete} onOpenChange={(open) => {
+          if (!open && !isDeleting) {
+            setChecklistToDelete(null)
+            setMotivoExclusao('')
+          }
+        }}>
+          <DialogContent className="max-w-md rounded-3xl p-6">
+            <DialogHeader>
+              <DialogTitle className="font-heading text-xl font-bold flex items-center gap-2 text-destructive">
+                <Trash2 className="size-5" />
+                Excluir Checklist
+              </DialogTitle>
+            </DialogHeader>
+
+            <p className="text-sm text-muted-foreground mt-2">
+              Deseja remover o checklist de <strong className="text-foreground">{checklistToDelete?.pet_nome}</strong>?
+              Ele sairá da fila de atendimento, mas continuará registrado no sistema para a administração.
+            </p>
+
+            <div className="space-y-2 mt-4">
+              <Label htmlFor="motivo-exclusao" className="text-sm font-semibold text-foreground">
+                Motivo da exclusão <span className="text-destructive">*</span>
+              </Label>
+              <Textarea
+                id="motivo-exclusao"
+                placeholder="Informe o motivo da exclusão (obrigatório)..."
+                value={motivoExclusao}
+                onChange={(e) => setMotivoExclusao(e.target.value)}
+                className="min-h-[90px] rounded-xl resize-none"
+                autoFocus
+              />
+              {!motivoExclusao.trim() && (
+                <p className="text-xs text-muted-foreground">
+                  É obrigatório informar o motivo antes de confirmar a exclusão.
+                </p>
+              )}
+            </div>
+
+            <div className="mt-5 flex justify-end gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                className="h-11 rounded-xl px-5 text-sm font-semibold"
+                onClick={() => {
+                  setChecklistToDelete(null)
+                  setMotivoExclusao('')
+                }}
+                disabled={isDeleting}
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="button"
+                variant="destructive"
+                className="h-11 rounded-xl px-5 text-sm font-bold"
+                disabled={!motivoExclusao.trim() || isDeleting}
+                onClick={async () => {
+                  if (!checklistToDelete || !motivoExclusao.trim()) return
+                  setIsDeleting(true)
+                  const res = await softDeleteChecklist(checklistToDelete.id, motivoExclusao.trim())
+                  setIsDeleting(false)
+
+                  if (res.success) {
+                    setChecklists(prev => prev.filter(c => c.id !== checklistToDelete.id))
+                    toast.success('Checklist excluído da fila com sucesso!')
+                    setChecklistToDelete(null)
+                    setMotivoExclusao('')
+                  } else {
+                    toast.error(res.message || 'Erro ao excluir checklist')
+                  }
+                }}
+              >
+                {isDeleting ? 'Excluindo...' : 'Confirmar Exclusão'}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
 
       </div>
     </main>

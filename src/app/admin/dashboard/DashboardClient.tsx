@@ -146,7 +146,8 @@ export default function DashboardClient({
                 status === 'Em banho' ? { color: 'text-ceu-deep', bg: 'bg-ceu/20', border: 'border-ceu' } :
                   status === 'Banho finalizado' ? { color: 'text-green-700', bg: 'bg-green-100', border: 'border-green-300' } :
                     status === 'Finalizado' ? { color: 'text-green-600', bg: 'bg-green-100', border: 'border-green-200' } :
-                      { color: 'text-gray-600', bg: 'bg-gray-100', border: 'border-gray-200' }
+                      status === 'Excluido' ? { color: 'text-red-700', bg: 'bg-red-100', border: 'border-red-300' } :
+                        { color: 'text-gray-600', bg: 'bg-gray-100', border: 'border-gray-200' }
 
               return (
                 <li key={item.id} className="flex flex-col gap-4 px-4 py-4 sm:flex-row sm:items-center md:px-6">
@@ -158,7 +159,7 @@ export default function DashboardClient({
                       <div className="flex items-center gap-2 mb-1">
                         <p className="truncate font-heading text-lg leading-tight font-bold">{item.pet_nome}</p>
                         <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${config.bg} ${config.color} ${config.border}`}>
-                          {status}
+                          {status === 'Excluido' ? 'Excluído' : status}
                         </span>
                       </div>
                       <p className="truncate text-sm text-muted-foreground">{item.raca}, de {item.tutor}</p>
@@ -572,6 +573,26 @@ export default function DashboardClient({
                 </Button>
               </DialogHeader>
 
+              {selectedChecklist.status === 'Excluido' && (
+                <div className="rounded-2xl border-2 border-red-300 bg-red-50/90 p-5 mx-6 mt-6 md:mx-8">
+                  <div className="flex items-center gap-2 text-red-700 font-bold text-base mb-2">
+                    <Trash2 className="size-5 text-red-600" />
+                    <span>Checklist Excluído</span>
+                    {selectedChecklist.detalhes?.excluido_em && (
+                      <span className="text-xs font-medium text-red-600 ml-auto">
+                        Excluído em: {new Date(selectedChecklist.detalhes.excluido_em).toLocaleString('pt-BR')}
+                      </span>
+                    )}
+                  </div>
+                  <div className="rounded-xl bg-white border border-red-200 p-3.5 text-sm text-red-950">
+                    <span className="font-bold text-red-800 block mb-1">Motivo da exclusão:</span>
+                    <p className="whitespace-pre-line leading-relaxed font-medium">
+                      {selectedChecklist.detalhes?.motivo_exclusao || selectedChecklist.motivo_exclusao || 'Motivo não informado.'}
+                    </p>
+                  </div>
+                </div>
+              )}
+
               <div className="space-y-8 px-6 py-6 md:px-8">
                 <dl className="grid grid-cols-1 gap-5 sm:grid-cols-3">
                   <div>
@@ -709,9 +730,9 @@ export default function DashboardClient({
       <Dialog open={!!checklistToDelete} onOpenChange={(open) => !open && setChecklistToDelete(null)}>
         <DialogContent className="max-w-md rounded-3xl p-6">
           <DialogHeader>
-            <DialogTitle className="font-heading text-xl font-bold">Excluir este checklist?</DialogTitle>
+            <DialogTitle className="font-heading text-xl font-bold">Excluir checklist definitivamente?</DialogTitle>
           </DialogHeader>
-          <p className="text-muted-foreground">A ficha sai do painel. Essa ação não pode ser desfeita.</p>
+          <p className="text-muted-foreground">Esta ação excluirá o checklist permanentemente do banco de dados. Essa ação não pode ser desfeita.</p>
           <div className="mt-4 flex justify-end gap-3">
             <Button variant="outline" className="h-11 rounded-xl px-5 text-base font-semibold" onClick={() => setChecklistToDelete(null)} disabled={isDeleting}>
               Cancelar
@@ -726,7 +747,7 @@ export default function DashboardClient({
                 setIsDeleting(false)
 
                 if (res.success) {
-                  toast.success('Checklist excluído com sucesso!')
+                  toast.success('Checklist excluído definitivamente do banco de dados!')
                   setChecklistToDelete(null)
                   if (selectedChecklist?.id === checklistToDelete) setSelectedChecklist(null)
                 } else {
@@ -734,7 +755,7 @@ export default function DashboardClient({
                 }
               }}
             >
-              {isDeleting ? 'Excluindo...' : 'Excluir checklist'}
+              {isDeleting ? 'Excluindo...' : 'Excluir definitivamente'}
             </Button>
           </div>
         </DialogContent>

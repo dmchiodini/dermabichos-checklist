@@ -17,3 +17,7 @@ create table if not exists tipos_hidratacao (
 
 -- Garantir que as tabelas permitam inserção e edição (sem RLS por enquanto para simplificar o admin interno)
 -- Se quiser, podemos habilitar RLS depois!
+
+-- Coluna opcional caso queira gravar motivo_exclusao diretamente em coluna separada além de detalhes (JSONB):
+-- alter table checklists add column if not exists motivo_exclusao text;
+

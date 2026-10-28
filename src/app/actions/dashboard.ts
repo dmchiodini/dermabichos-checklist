@@ -53,6 +53,8 @@ export async function getDashboardStats(startDate: string, endDate: string): Pro
   const volumeMap: Record<string, number> = {}
 
   checklists.forEach(c => {
+    if (c.status === 'Excluido') return
+
     // Status
     if (c.status === 'Finalizado') {
       stats.finalizados++
@@ -73,6 +75,7 @@ export async function getDashboardStats(startDate: string, endDate: string): Pro
     volumeMap[dateStr] = (volumeMap[dateStr] || 0) + 1
   })
 
+  stats.total = stats.finalizados + stats.abertos
   stats.porFuncionario = Object.values(funcMap).sort((a, b) => b.finalizados - a.finalizados)
 
   // Generate an array of dates from startDate to endDate to ensure 0s are included in volumeDiario

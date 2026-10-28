@@ -249,6 +249,16 @@ export default function PrintClient({ checklist, funcionarios }: { checklist: an
           </div>
         </dl>
 
+        {checklist.status === 'Excluido' && (
+          <div className="mb-6 rounded-xl border border-red-300 bg-red-50 p-3 text-sm text-red-900">
+            <p className="font-bold text-red-700">Checklist Excluído</p>
+            <p className="mt-0.5">
+              <span className="font-semibold">Motivo: </span>
+              {checklist.detalhes?.motivo_exclusao || checklist.motivo_exclusao || 'Não informado'}
+            </p>
+          </div>
+        )}
+
         <section className="mb-6">
           <h2 className="mb-3 border-b border-[#d1d5db] pb-1 text-base font-bold">Serviços realizados</h2>
           <div className="grid grid-cols-3 gap-6 text-sm">

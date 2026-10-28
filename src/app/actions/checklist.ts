@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { revalidatePath } from 'next/cache'
 import { ChecklistFormValues } from '@/schemas/checklist.schema'
 
 export async function getLookupData() {
@@ -166,6 +167,50 @@ export async function updateChecklistStatus(id: string, status: string) {
   }
 }
 
+export async function softDeleteChecklist(id: string, motivo: string) {
+  try {
+    if (!motivo || !motivo.trim()) {
+      return { success: false, message: 'O motivo da exclusão é obrigatório.' }
+    }
+
+    const supabase = await createClient()
+
+    // Buscar detalhes atuais para preservar as outras informações
+    const { data: current, error: fetchError } = await supabase
+      .from('checklists')
+      .select('detalhes')
+      .eq('id', id)
+      .single()
+
+    if (fetchError) throw fetchError
+
+    const detalhesAtuais = (current?.detalhes && typeof current.detalhes === 'object') ? current.detalhes : {}
+
+    const { error: updateError } = await supabase
+      .from('checklists')
+      .update({
+        status: 'Excluido',
+        detalhes: {
+          ...detalhesAtuais,
+          motivo_exclusao: motivo.trim(),
+          excluido_em: new Date().toISOString()
+        }
+      })
+      .eq('id', id)
+
+    if (updateError) throw updateError
+
+    revalidatePath('/')
+    revalidatePath('/checklist')
+    revalidatePath('/admin/dashboard')
+
+    return { success: true }
+  } catch (error: any) {
+    console.error('Erro ao excluir checklist:', error)
+    return { success: false, message: error.message || 'Erro ao excluir checklist' }
+  }
+}
+
 export async function getActiveChecklists(funcionario?: { id: string, cargo: string, role?: string }) {
   const supabase = await createClient()
 
@@ -177,6 +222,7 @@ export async function getActiveChecklists(funcionario?: { id: string, cargo: str
   let query = supabase
     .from('checklists')
     .select('*')
+    .neq('status', 'Excluido')
     .gte('created_at', startDate)
     .order('created_at', { ascending: false })
     
@@ -204,6 +250,7 @@ export async function getFilteredChecklists(
   let query = supabase
     .from('checklists')
     .select('*')
+    .neq('status', 'Excluido')
     .order('created_at', { ascending: false })
 
   if (dateFilter) {

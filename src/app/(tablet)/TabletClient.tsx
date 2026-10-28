@@ -8,7 +8,7 @@ import { Trash2, Check, ChevronsUpDown, Camera, X, User, Plus } from 'lucide-rea
 import { CiMedicalCross } from 'react-icons/ci'
 import { checklistSchema, ChecklistFormValues } from '@/schemas/checklist.schema'
 import { SignaturePad } from '@/components/signature-pad'
-import { submitChecklist, getLookupData, updateChecklistStatus } from '@/app/actions/checklist'
+import { submitChecklist, getLookupData, updateChecklistStatus, softDeleteChecklist } from '@/app/actions/checklist'
 import { cn } from '@/lib/utils'
 import { useEffect } from 'react'
 import { toast } from 'react-toastify'
@@ -22,6 +22,7 @@ import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
 
@@ -109,6 +110,10 @@ export default function TabletClient({ user, isRecepcao = true }: { user?: any, 
   const [existingFotos, setExistingFotos] = useState<string[]>([])
   const [isFinalizado, setIsFinalizado] = useState(false)
   const [checklistStatus, setChecklistStatus] = useState<string>('Aguardando')
+  const [actionType, setActionType] = useState<'save' | 'finalize'>('finalize')
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
+  const [motivoExclusao, setMotivoExclusao] = useState('')
+  const [isDeleting, setIsDeleting] = useState(false)
 
   const [funcionarios, setFuncionarios] = useState<Database['public']['Tables']['funcionarios']['Row'][]>([])
   const [hidratacoes, setHidratacoes] = useState<Database['public']['Tables']['tipos_hidratacao']['Row'][]>([])
@@ -210,9 +215,12 @@ export default function TabletClient({ user, isRecepcao = true }: { user?: any, 
       const result = await submitChecklist(data, formData)
 
       if (result.success) {
-        toast.success(editId ? 'Checklist atualizado!' : 'Checklist salvo com sucesso!')
-        if (data.termo_aceito && data.assinatura && editId) {
+        const shouldFinalize = editId && (actionType === 'finalize' || checklistStatus === 'Banho finalizado')
+        if (shouldFinalize) {
           await updateChecklistStatus(editId, 'Finalizado')
+          toast.success('Checklist finalizado com sucesso!')
+        } else {
+          toast.success(editId ? 'Checklist atualizado com sucesso!' : 'Checklist iniciado com sucesso!')
         }
         router.push('/')
         // Não voltamos isSubmitting para false aqui porque vamos mudar de página, 
@@ -590,7 +598,7 @@ export default function TabletClient({ user, isRecepcao = true }: { user?: any, 
                 <span aria-hidden className="grid size-9 shrink-0 place-items-center rounded-full bg-rosa font-heading text-base font-bold text-white">5</span>
                 <div className="pt-1">
                   <h2 className="text-xl font-bold leading-tight md:text-2xl">Para o responsável</h2>
-                  <p className="mt-1 text-sm text-muted-foreground">Confira os dados acima, marque a declaração e assine.</p>
+                  <p className="mt-1 text-sm text-muted-foreground">Opcional: conferência, termo e assinatura do responsável.</p>
                   {checklistStatus !== 'Banho finalizado' && checklistStatus !== 'Finalizado' && (
                     <p className="mt-2 text-sm font-semibold text-destructive">
                       Aguarde o banho ser finalizado para coletar a assinatura.
@@ -643,13 +651,51 @@ export default function TabletClient({ user, isRecepcao = true }: { user?: any, 
             </fieldset>
 
             {!isFinalizado && (
-              <Button
-                type="submit"
-                disabled={isSubmitting}
-                className="mt-4 h-16 w-full rounded-2xl text-xl font-bold shadow-[0_6px_0_-1px_var(--ceu-deep)] hover:bg-ceu/90 active:not-aria-[haspopup]:translate-y-0.5 active:shadow-[0_3px_0_-1px_var(--ceu-deep)]"
-              >
-                {isSubmitting ? 'Salvando...' : (editId ? 'Salvar Alterações' : 'Iniciar Checklist')}
-              </Button>
+              <div className="mt-4 flex flex-col sm:flex-row gap-3">
+                {editId && isRecepcao ? (
+                  <>
+                    <Button
+                      type="submit"
+                      disabled={isSubmitting}
+                      onClick={() => setActionType('finalize')}
+                      className="h-16 flex-1 rounded-2xl text-xl font-bold bg-green-600 hover:bg-green-700 text-white shadow-md transition-colors"
+                    >
+                      {isSubmitting && actionType === 'finalize' ? 'Finalizando...' : 'Finalizar Atendimento'}
+                    </Button>
+                    <Button
+                      type="submit"
+                      variant="outline"
+                      disabled={isSubmitting}
+                      onClick={() => setActionType('save')}
+                      className="h-16 sm:w-auto px-6 rounded-2xl text-base font-semibold border-border bg-white text-muted-foreground hover:bg-muted"
+                    >
+                      {isSubmitting && actionType === 'save' ? 'Salvando...' : 'Salvar sem Finalizar'}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      disabled={isSubmitting}
+                      onClick={() => {
+                        setIsDeleteModalOpen(true)
+                        setMotivoExclusao('')
+                      }}
+                      className="h-16 sm:w-auto px-5 rounded-2xl text-base font-semibold border-destructive/30 text-destructive hover:bg-destructive/10"
+                      title="Excluir checklist"
+                    >
+                      <Trash2 className="size-5 mr-1.5" />
+                      Excluir
+                    </Button>
+                  </>
+                ) : (
+                  <Button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="h-16 w-full rounded-2xl text-xl font-bold shadow-[0_6px_0_-1px_var(--ceu-deep)] hover:bg-ceu/90 active:not-aria-[haspopup]:translate-y-0.5 active:shadow-[0_3px_0_-1px_var(--ceu-deep)]"
+                  >
+                    {isSubmitting ? 'Salvando...' : (editId ? 'Salvar Alterações' : 'Iniciar Checklist')}
+                  </Button>
+                )}
+              </div>
             )}
             {isFinalizado && (
               <div className="mt-4 p-4 rounded-2xl bg-green-50 border border-green-200 text-center">
@@ -660,6 +706,84 @@ export default function TabletClient({ user, isRecepcao = true }: { user?: any, 
 
           </fieldset>
         </form>
+
+        {/* Modal de Confirmação de Exclusão (Recepção) */}
+        <Dialog open={isDeleteModalOpen} onOpenChange={(open) => {
+          if (!open && !isDeleting) {
+            setIsDeleteModalOpen(false)
+            setMotivoExclusao('')
+          }
+        }}>
+          <DialogContent className="max-w-md rounded-3xl p-6">
+            <DialogHeader>
+              <DialogTitle className="font-heading text-xl font-bold flex items-center gap-2 text-destructive">
+                <Trash2 className="size-5" />
+                Excluir Checklist
+              </DialogTitle>
+            </DialogHeader>
+
+            <p className="text-sm text-muted-foreground mt-2">
+              Deseja excluir este checklist? Ele sairá da fila da recepção e do operacional, mas continuará registrado no sistema para a administração.
+            </p>
+
+            <div className="space-y-2 mt-4">
+              <Label htmlFor="motivo-exclusao-form" className="text-sm font-semibold text-foreground">
+                Motivo da exclusão <span className="text-destructive">*</span>
+              </Label>
+              <Textarea
+                id="motivo-exclusao-form"
+                placeholder="Informe o motivo da exclusão (obrigatório)..."
+                value={motivoExclusao}
+                onChange={(e) => setMotivoExclusao(e.target.value)}
+                className="min-h-[90px] rounded-xl resize-none"
+                autoFocus
+              />
+              {!motivoExclusao.trim() && (
+                <p className="text-xs text-muted-foreground">
+                  É obrigatório informar o motivo antes de confirmar a exclusão.
+                </p>
+              )}
+            </div>
+
+            <div className="mt-5 flex justify-end gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                className="h-11 rounded-xl px-5 text-sm font-semibold"
+                onClick={() => {
+                  setIsDeleteModalOpen(false)
+                  setMotivoExclusao('')
+                }}
+                disabled={isDeleting}
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="button"
+                variant="destructive"
+                className="h-11 rounded-xl px-5 text-sm font-bold"
+                disabled={!motivoExclusao.trim() || isDeleting}
+                onClick={async () => {
+                  if (!editId || !motivoExclusao.trim()) return
+                  setIsDeleting(true)
+                  const res = await softDeleteChecklist(editId, motivoExclusao.trim())
+                  setIsDeleting(false)
+
+                  if (res.success) {
+                    toast.success('Checklist excluído da fila com sucesso!')
+                    setIsDeleteModalOpen(false)
+                    router.push('/')
+                  } else {
+                    toast.error(res.message || 'Erro ao excluir checklist')
+                  }
+                }}
+              >
+                {isDeleting ? 'Excluindo...' : 'Confirmar Exclusão'}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
       </div>
     </main>
   )
