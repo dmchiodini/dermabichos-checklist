@@ -723,7 +723,7 @@ export default function TabletClient({ user, isRecepcao = true }: { user?: any, 
             </DialogHeader>
 
             <p className="text-sm text-muted-foreground mt-2">
-              Deseja excluir este checklist? Ele sairá da fila da recepção e do operacional, mas continuará registrado no sistema para a administração.
+              Deseja excluir este checklist? Ele sairá da fila da recepção e do operacional.
             </p>
 
             <div className="space-y-2 mt-4">

@@ -28,7 +28,7 @@ export default function FilaClient({ initialChecklists, user }: { initialCheckli
   const [motivoExclusao, setMotivoExclusao] = useState('')
   const [isDeleting, setIsDeleting] = useState(false)
   const router = useRouter()
-  
+
   const isRecepcao = user.role === 'recepcao' || user.cargo?.toLowerCase() === 'recepção' || user.cargo?.toLowerCase() === 'recepcao'
 
   const applyFilters = async () => {
@@ -79,16 +79,16 @@ export default function FilaClient({ initialChecklists, user }: { initialCheckli
   return (
     <main className="min-h-screen overflow-x-clip bg-espuma px-3 py-6 md:px-8 md:py-10">
       <div className="relative mx-auto max-w-5xl">
-        
+
         {/* Header */}
         <header className="flex flex-col md:flex-row items-start md:items-center justify-between gap-5 mb-8">
           <div className="flex items-center gap-5">
             {user.foto_url ? (
               /* eslint-disable-next-line @next/next/no-img-element */
-              <img 
-                src={user.foto_url} 
-                alt={user.nome} 
-                className="size-16 shrink-0 rounded-full object-cover ring-4 ring-accent md:size-20" 
+              <img
+                src={user.foto_url}
+                alt={user.nome}
+                className="size-16 shrink-0 rounded-full object-cover ring-4 ring-accent md:size-20"
               />
             ) : (
               <Image
@@ -110,7 +110,7 @@ export default function FilaClient({ initialChecklists, user }: { initialCheckli
               </div>
             </div>
           </div>
-          
+
           <div className="flex flex-col md:items-end gap-3 w-full md:w-auto">
             {isRecepcao && (
               <Link href="/checklist">
@@ -127,31 +127,31 @@ export default function FilaClient({ initialChecklists, user }: { initialCheckli
         <div className="flex flex-col md:flex-row items-center gap-3 mb-6">
           <div className="relative flex-1 w-full">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-            <Input 
-              placeholder="Buscar pet ou responsável..." 
+            <Input
+              placeholder="Buscar pet ou responsável..."
               className="pl-9 h-12 bg-white rounded-xl"
               value={filterSearch}
               onChange={(e) => setFilterSearch(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && applyFilters()}
             />
           </div>
-          
+
           <div className="flex w-full md:w-auto gap-3 shrink-0">
             <div className="relative flex-1 md:w-48">
               <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-              <Input 
-                type="date" 
+              <Input
+                type="date"
                 className="pl-9 h-12 bg-white rounded-xl"
                 value={filterDate}
                 onChange={(e) => setFilterDate(e.target.value)}
               />
             </div>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => {
                 toast.info('Atualizando fila...', { autoClose: 1000 })
                 applyFilters()
-              }} 
+              }}
               className="h-12 px-4 rounded-xl border-border bg-white text-muted-foreground hover:text-foreground"
               aria-label="Atualizar cards"
             >
@@ -189,7 +189,7 @@ export default function FilaClient({ initialChecklists, user }: { initialCheckli
             const StatusIcon = config.icon
 
             return (
-              <div 
+              <div
                 key={checklist.id}
                 className="flex flex-col bg-card rounded-[24px] shadow-sm border border-border overflow-hidden transition-all hover:shadow-md"
               >
@@ -220,11 +220,11 @@ export default function FilaClient({ initialChecklists, user }: { initialCheckli
                       )}
                     </div>
                   </div>
-                  
+
                   <h3 className="text-xl font-bold leading-tight mb-1">{checklist.pet_nome}</h3>
                   <p className="text-muted-foreground text-sm font-medium mb-3">{checklist.raca} ({checklist.especie})</p>
                   <p className="text-sm font-medium text-foreground"><span className="text-muted-foreground">Responsável:</span> {checklist.tutor}</p>
-                  
+
                   {((checklist.detalhes as any)?.cuidados_medicos || (checklist as any).cuidados_medicos) && (
                     <div className="mt-3 flex items-start gap-2 rounded-xl border border-red-200 bg-red-50/80 p-2 text-xs text-red-700">
                       <CiMedicalCross className="size-4 shrink-0 text-red-600 mt-0.5" />
@@ -246,9 +246,9 @@ export default function FilaClient({ initialChecklists, user }: { initialCheckli
                 <div className="border-t border-border bg-accent/30 p-3 flex items-center justify-between gap-2">
                   <div className="flex gap-2">
                     {checklist.status !== 'Finalizado' && checklist.status !== 'Em banho' && checklist.status !== 'Banho finalizado' && (
-                      <Button 
-                        size="sm" 
-                        variant="outline" 
+                      <Button
+                        size="sm"
+                        variant="outline"
                         onClick={() => handleStatusChange(checklist.id, 'Em banho')}
                         className="text-ceu-deep border-ceu/30 hover:bg-ceu/10"
                       >
@@ -256,9 +256,9 @@ export default function FilaClient({ initialChecklists, user }: { initialCheckli
                       </Button>
                     )}
                     {checklist.status === 'Em banho' && (
-                      <Button 
-                        size="sm" 
-                        variant="outline" 
+                      <Button
+                        size="sm"
+                        variant="outline"
                         onClick={() => handleStatusChange(checklist.id, 'Banho finalizado')}
                         className="text-green-700 border-green-300 hover:bg-green-100"
                       >
@@ -266,9 +266,9 @@ export default function FilaClient({ initialChecklists, user }: { initialCheckli
                       </Button>
                     )}
                     {checklist.status === 'Banho finalizado' && isRecepcao && (
-                      <Button 
-                        size="sm" 
-                        variant="outline" 
+                      <Button
+                        size="sm"
+                        variant="outline"
                         onClick={() => handleStatusChange(checklist.id, 'Finalizado')}
                         className="text-green-700 border-green-300 hover:bg-green-100 font-semibold"
                         title="Finalizar atendimento diretamente"
@@ -277,7 +277,7 @@ export default function FilaClient({ initialChecklists, user }: { initialCheckli
                       </Button>
                     )}
                   </div>
-                  
+
                   <div className="flex flex-1 items-center gap-2">
                     {checklist.status === 'Finalizado' ? (
                       <Link href={`/checklist?edit=${checklist.id}`} className="flex-1 flex">
@@ -296,9 +296,9 @@ export default function FilaClient({ initialChecklists, user }: { initialCheckli
                     )}
 
                     {isRecepcao && checklist.status === 'Finalizado' && (
-                      <Button 
-                        size="sm" 
-                        variant="outline" 
+                      <Button
+                        size="sm"
+                        variant="outline"
                         onClick={() => handleShare(checklist)}
                         className="px-2 text-muted-foreground hover:text-foreground border-border shrink-0"
                         title="Compartilhar"
@@ -341,7 +341,7 @@ export default function FilaClient({ initialChecklists, user }: { initialCheckli
 
             <p className="text-sm text-muted-foreground mt-2">
               Deseja remover o checklist de <strong className="text-foreground">{checklistToDelete?.pet_nome}</strong>?
-              Ele sairá da fila de atendimento, mas continuará registrado no sistema para a administração.
+              Ele sairá da fila de atendimento.
             </p>
 
             <div className="space-y-2 mt-4">
