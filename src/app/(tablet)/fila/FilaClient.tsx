@@ -92,7 +92,7 @@ export default function FilaClient({ initialChecklists, user }: { initialCheckli
               />
             ) : (
               <Image
-                src="/dermabichos-logo.svg"
+                src="/dermabichos-icon.svg"
                 alt="Dermabichos"
                 width={88}
                 height={88}

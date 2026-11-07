@@ -31,7 +31,7 @@ export default function LoginPage() {
       <div className="relative hidden flex-col justify-between overflow-hidden bg-ceu p-12 text-primary-foreground md:flex">
         <span aria-hidden className="absolute -right-28 -bottom-28 size-96 rounded-full bg-rosa" />
         <Image
-          src="/dermabichos-logo.svg"
+          src="/dermabichos-icon.svg"
           alt="Dermabichos"
           width={120}
           height={120}
@@ -46,7 +46,7 @@ export default function LoginPage() {
       <div className="flex flex-col items-center justify-center px-5 py-12">
         <div className="w-full max-w-sm">
           <Image
-            src="/dermabichos-logo.svg"
+            src="/dermabichos-icon.svg"
             alt="Dermabichos"
             width={88}
             height={88}

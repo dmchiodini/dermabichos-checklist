@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { addFuncionario, toggleFuncionario, deleteFuncionario, updateFuncionario, addTipoHidratacao, toggleTipoHidratacao, updateTipoHidratacao, deleteTipoHidratacao, deleteChecklist } from '@/app/actions/admin'
 import { toast } from 'react-toastify'
-import { Printer, Eye, Trash2, ClipboardList, Users, Droplets, Dog, Cat, Check, Minus, Search, Calendar, Edit2, User, Camera, PieChart, Plus } from 'lucide-react'
+import { Printer, Eye, Trash2, ClipboardList, Users, Droplets, Dog, Cat, Check, Minus, Search, Calendar, Edit2, User, Camera, PieChart, Plus, Filter, RotateCcw } from 'lucide-react'
 import { CiMedicalCross } from 'react-icons/ci'
 import { useRouter, useSearchParams } from 'next/navigation'
 import DashboardOverview from './DashboardOverview'
@@ -48,6 +48,13 @@ function DetailBlock({ title, children }: { title: string; children: React.React
   )
 }
 
+function formatDateDisplay(dateStr: string) {
+  if (!dateStr) return ''
+  const parts = dateStr.split('-')
+  if (parts.length !== 3) return dateStr
+  return `${parts[2]}/${parts[1]}/${parts[0]}`
+}
+
 export default function DashboardClient({
   initialChecklists,
   initialFuncionarios,
@@ -63,15 +70,52 @@ export default function DashboardClient({
   const today = new Date()
   const defaultDate = new Date(today.getTime() - (today.getTimezoneOffset() * 60000)).toISOString().split('T')[0]
 
-  const [filterDate, setFilterDate] = useState(searchParams.get('date') || defaultDate)
-  const [filterSearch, setFilterSearch] = useState(searchParams.get('search') || '')
+  const initialStartDate = searchParams.get('startDate') || searchParams.get('date') || defaultDate
+  const initialEndDate = searchParams.get('endDate') || searchParams.get('startDate') || searchParams.get('date') || defaultDate
+  const initialStatus = searchParams.get('status') || 'todos'
+  const initialSearch = searchParams.get('search') || ''
+
+  const [filterStartDate, setFilterStartDate] = useState(initialStartDate)
+  const [filterEndDate, setFilterEndDate] = useState(initialEndDate)
+  const [filterStatus, setFilterStatus] = useState(initialStatus)
+  const [filterSearch, setFilterSearch] = useState(initialSearch)
+
+  const [currentTab, setCurrentTab] = useState(searchParams.get('tab') || 'visao-geral')
+
+  React.useEffect(() => {
+    setFilterStartDate(searchParams.get('startDate') || searchParams.get('date') || defaultDate)
+    setFilterEndDate(searchParams.get('endDate') || searchParams.get('startDate') || searchParams.get('date') || defaultDate)
+    setFilterStatus(searchParams.get('status') || 'todos')
+    setFilterSearch(searchParams.get('search') || '')
+    if (searchParams.get('tab')) {
+      setCurrentTab(searchParams.get('tab')!)
+    }
+  }, [searchParams, defaultDate])
 
   const applyFilters = () => {
     const params = new URLSearchParams()
-    if (filterDate) params.set('date', filterDate)
-    if (filterSearch) params.set('search', filterSearch)
+    params.set('tab', 'checklists')
+    if (filterStartDate) params.set('startDate', filterStartDate)
+    if (filterEndDate) params.set('endDate', filterEndDate)
+    if (filterStatus && filterStatus !== 'todos') params.set('status', filterStatus)
+    if (filterSearch && filterSearch.trim()) params.set('search', filterSearch.trim())
     router.push(`/admin/dashboard?${params.toString()}`)
   }
+
+  const clearFilters = () => {
+    setFilterStartDate(defaultDate)
+    setFilterEndDate(defaultDate)
+    setFilterStatus('todos')
+    setFilterSearch('')
+    router.push('/admin/dashboard?tab=checklists')
+  }
+
+  const hasActiveFilters = Boolean(
+    (filterStatus && filterStatus !== 'todos') ||
+    (filterSearch && filterSearch.trim() !== '') ||
+    (filterStartDate && filterStartDate !== defaultDate) ||
+    (filterEndDate && filterEndDate !== defaultDate)
+  )
 
   const funcFormRef = useRef<HTMLFormElement>(null)
   const hidFormRef = useRef<HTMLFormElement>(null)
@@ -83,13 +127,21 @@ export default function DashboardClient({
   const [editPhotoUrl, setEditPhotoUrl] = useState<string | null>(null)
   const [selectedPhotoFile, setSelectedPhotoFile] = useState<File | null>(null)
   const [isSavingFuncionario, setIsSavingFuncionario] = useState(false)
-  const [currentTab, setCurrentTab] = useState('visao-geral')
   const [isDeleting, setIsDeleting] = useState(false)
   const [editingTipoHidratacao, setEditingTipoHidratacao] = useState<any>(null)
   const [isSavingHidratacao, setIsSavingHidratacao] = useState(false)
 
   return (
-    <Tabs value={currentTab} onValueChange={setCurrentTab} className="w-full gap-6 sm:gap-8">
+    <Tabs
+      value={currentTab}
+      onValueChange={(val) => {
+        setCurrentTab(val)
+        const params = new URLSearchParams(searchParams.toString())
+        params.set('tab', val)
+        router.replace(`/admin/dashboard?${params.toString()}`, { scroll: false })
+      }}
+      className="w-full gap-6 sm:gap-8"
+    >
       <TabsList className="h-auto w-full grid grid-cols-2 gap-1.5 rounded-2xl bg-muted p-1.5 sm:flex sm:w-fit">
         <TabsTrigger value="visao-geral" className={tabTrigger}><PieChart aria-hidden />Visão Geral</TabsTrigger>
         <TabsTrigger value="checklists" className={tabTrigger}><ClipboardList aria-hidden />Checklists</TabsTrigger>
@@ -102,40 +154,135 @@ export default function DashboardClient({
       </TabsContent>
 
       <TabsContent value="checklists" className="space-y-5">
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="space-y-1">
             <h2 className={sectionTitle}>Checklists</h2>
-            <p className="text-sm text-muted-foreground">Mostrando os resultados da busca</p>
-          </div>
-
-          <div className="flex flex-col sm:flex-row gap-3">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-              <Input
-                placeholder="Buscar pet ou responsável..."
-                className="pl-9 bg-white"
-                value={filterSearch}
-                onChange={(e) => setFilterSearch(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && applyFilters()}
-              />
-            </div>
-            <div className="relative">
-              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-              <Input
-                type="date"
-                className="pl-9 bg-white"
-                value={filterDate}
-                onChange={(e) => setFilterDate(e.target.value)}
-                onBlur={applyFilters}
-              />
-            </div>
-            <Button onClick={applyFilters}>Filtrar</Button>
+            <p className="text-sm text-muted-foreground">
+              {initialChecklists.length === 1
+                ? '1 checklist encontrado'
+                : `${initialChecklists.length} checklists encontrados`}
+            </p>
           </div>
         </div>
+
+        {/* Painel de Filtros: Status, Período de Duas Datas e Busca */}
+        <div className="rounded-2xl border border-border bg-white p-4 sm:p-5 shadow-sm space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 items-end">
+            {/* Campo de Busca */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Buscar</Label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
+                <Input
+                  placeholder="Pet ou responsável..."
+                  className="h-11 sm:h-12 pl-9 bg-muted/20 text-sm"
+                  value={filterSearch}
+                  onChange={(e) => setFilterSearch(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && applyFilters()}
+                />
+              </div>
+            </div>
+
+            {/* Filtro por Status */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Status</Label>
+              <Select value={filterStatus} onValueChange={(val) => setFilterStatus(val || 'todos')}>
+                <SelectTrigger className="h-11 sm:h-12 data-[size=default]:h-11 sm:data-[size=default]:h-12 w-full bg-muted/20 text-sm">
+                  <SelectValue placeholder="Todos os status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos os status</SelectItem>
+                  <SelectItem value="Aguardando">Aguardando</SelectItem>
+                  <SelectItem value="Em banho">Em banho</SelectItem>
+                  <SelectItem value="Banho finalizado">Banho finalizado</SelectItem>
+                  <SelectItem value="Finalizado">Finalizado</SelectItem>
+                  <SelectItem value="Excluido">Excluído</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Período: Data Início */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Data início</Label>
+              <div className="relative">
+                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
+                <Input
+                  type="date"
+                  className="h-11 sm:h-12 pl-9 bg-muted/20 text-sm"
+                  value={filterStartDate}
+                  onChange={(e) => setFilterStartDate(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && applyFilters()}
+                />
+              </div>
+            </div>
+
+            {/* Período: Data Fim */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Data fim</Label>
+              <div className="relative">
+                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
+                <Input
+                  type="date"
+                  className="h-11 sm:h-12 pl-9 bg-muted/20 text-sm"
+                  value={filterEndDate}
+                  onChange={(e) => setFilterEndDate(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && applyFilters()}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Rodapé do Painel de Filtros */}
+          <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-border/70">
+            <div className="text-xs text-muted-foreground">
+              {filterStartDate === filterEndDate ? (
+                <span>Data: <strong className="text-foreground">{formatDateDisplay(filterStartDate)}</strong></span>
+              ) : (
+                <span>Período: <strong className="text-foreground">{formatDateDisplay(filterStartDate)}</strong> até <strong className="text-foreground">{formatDateDisplay(filterEndDate)}</strong></span>
+              )}
+              {filterStatus !== 'todos' && (
+                <span className="ml-2 font-medium">• Status: <strong className="text-foreground">{filterStatus === 'Excluido' ? 'Excluído' : filterStatus}</strong></span>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2">
+              {hasActiveFilters && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={clearFilters}
+                  className="h-10 rounded-xl px-3 text-xs sm:text-sm font-semibold text-muted-foreground hover:text-foreground"
+                >
+                  <RotateCcw className="size-3.5 mr-1.5" />
+                  Limpar filtros
+                </Button>
+              )}
+              <Button
+                type="button"
+                onClick={applyFilters}
+                className="h-10 rounded-xl px-5 text-sm font-bold bg-primary text-primary-foreground hover:bg-primary/90"
+              >
+                <Filter className="size-4 mr-1.5" />
+                Filtrar
+              </Button>
+            </div>
+          </div>
+        </div>
+
         {initialChecklists.length === 0 ? (
           <div className={`${panel} px-6 py-14 text-center`}>
-            <p className="font-heading text-lg font-semibold">Nenhum checklist registrado ainda</p>
-            <p className="mt-1 text-muted-foreground">Os checklists preenchidos no tablet da recepção aparecem aqui.</p>
+            <p className="font-heading text-lg font-semibold">Nenhum checklist encontrado</p>
+            <p className="mt-1 text-muted-foreground">
+              {hasActiveFilters
+                ? 'Nenhum resultado corresponde aos filtros selecionados. Tente ajustar o período, status ou termo de busca.'
+                : 'Os checklists preenchidos no tablet da recepção aparecem aqui.'}
+            </p>
+            {hasActiveFilters && (
+              <Button variant="outline" size="sm" onClick={clearFilters} className="mt-4 rounded-xl">
+                <RotateCcw className="size-3.5 mr-1.5" />
+                Limpar filtros
+              </Button>
+            )}
           </div>
         ) : (
           <ul className={`${panel} divide-y divide-border overflow-hidden`}>

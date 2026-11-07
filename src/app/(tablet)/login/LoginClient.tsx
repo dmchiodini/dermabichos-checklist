@@ -16,7 +16,7 @@ export default function LoginClient() {
         <span aria-hidden className="absolute -right-28 -bottom-50 size-80 rounded-full bg-rosa" />
         <div className='h-full w-full flex items-center justify-center'>
           <Image
-            src="/dermabichos-logo.svg"
+            src="/dermabichos-icon.svg"
             alt="Dermabichos"
             width={400}
             height={400}
@@ -32,7 +32,7 @@ export default function LoginClient() {
       <div className="flex flex-col items-center justify-center px-5 py-12">
         <div className="w-full max-w-sm">
           <Image
-            src="/dermabichos-logo.svg"
+            src="/dermabichos-icon.svg"
             alt="Dermabichos"
             width={88}
             height={88}

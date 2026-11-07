@@ -28,14 +28,14 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 
 const dogBreeds = [
   "SRD (Sem Raça Definida)", "Afghan Hound", "Akita", "American Bully", "Basset Hound",
-  "Beagle", "Bernese Mountain Dog", "Bichon Frisé", "Boiadeiro Australiano (Heeler)",
+  "Beagle", "Bernese Mountain Dog", "Bichon Frisé", "Bichon Havanês", "Boiadeiro Australiano (Heeler)",
   "Border Collie", "Boston Terrier", "Boxer", "Buldogue Francês", "Buldogue Inglês",
   "Bull Terrier", "Cane Corso", "Cavalier King Charles Spaniel", "Chihuahua", "Chow Chow",
   "Cocker Spaniel", "Collie", "Corgi", "Dachshund (Salsicha)", "Dálmata", "Doberman",
   "Dogo Argentino", "Fila Brasileiro", "Fox Paulistinha", "Golden Retriever", "Husky Siberiano",
   "Jack Russell Terrier", "Labrador Retriever", "Lhasa Apso", "Maltês", "Papillon",
   "Pastor Alemão", "Pastor Belga", "Pastor Branco Suíço", "Pequinês", "Pinscher", "Pit Bull",
-  "Poodle", "Pug", "Rottweiler", "São Bernardo", "Schnauzer", "Shar-Pei", "Shih Tzu",
+  "Pomsky", "Poodle", "Pug", "Rottweiler", "São Bernardo", "Schnauzer", "Shar-Pei", "Shih Tzu",
   "Spitz Alemão (Lulu da Pomerânia)", "West Terrier", "Yorkshire Terrier"
 ]
 
@@ -292,7 +292,7 @@ export default function TabletClient({ user, isRecepcao = true }: { user?: any, 
             <X className="size-6" />
           </Button>
           <Image
-            src="/dermabichos-logo.svg"
+            src="/dermabichos-icon.svg"
             alt="Dermabichos"
             width={88}
             height={88}

@@ -223,7 +223,7 @@ export default function PrintClient({ checklist, funcionarios }: { checklist: an
 
         <header className="mb-6 flex items-center gap-4 border-b-2 border-[#79b7de] pb-4">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/dermabichos-logo.svg" alt="Dermabichos" className="size-16" />
+          <img src="/dermabichos-icon.svg" alt="Dermabichos" className="size-16" />
           <div>
             <h1 className="text-2xl leading-tight font-extrabold">Checklist Estética Animal</h1>
             <p className="text-sm text-[#4b5563]">Dados do pet e serviços realizados</p>
