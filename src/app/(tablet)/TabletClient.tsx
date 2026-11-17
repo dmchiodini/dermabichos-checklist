@@ -92,7 +92,7 @@ function ServiceToggle({ id, label, checked, onCheckedChange }: {
   return (
     <div className="flex items-center gap-3 rounded-xl border border-border bg-white pl-4 transition-colors has-data-checked:border-ceu has-data-checked:bg-accent min-w-0 max-w-full">
       <Checkbox id={id} checked={checked} onCheckedChange={onCheckedChange} className="size-6 shrink-0 rounded-md border-input" />
-      <Label htmlFor={id} className="flex-1 cursor-pointer self-stretch py-4 pr-4 text-base font-medium leading-snug break-words min-w-0">
+      <Label htmlFor={id} className="flex-1 cursor-pointer self-stretch py-4 pr-4 text-base font-medium leading-snug wrap-break-word min-w-0">
         {label}
       </Label>
     </div>
@@ -508,7 +508,7 @@ export default function TabletClient({ isRecepcao = true }: { isRecepcao?: boole
                           : "bg-white text-red-600 border-2 border-red-300 hover:bg-red-50 hover:border-red-400"
                       )}
                     >
-                      <CiMedicalCross className="size-5 stroke-[1]" />
+                      <CiMedicalCross className="size-5 stroke-1" />
                       <span>Alerta de saúde</span>
                     </button>
                   </div>
@@ -758,7 +758,7 @@ export default function TabletClient({ isRecepcao = true }: { isRecepcao?: boole
                 placeholder="Informe o motivo da exclusão (obrigatório)..."
                 value={motivoExclusao}
                 onChange={(e) => setMotivoExclusao(e.target.value)}
-                className="min-h-[90px] rounded-xl resize-none"
+                className="min-h-22.5 rounded-xl resize-none"
                 autoFocus
               />
               {!motivoExclusao.trim() && (

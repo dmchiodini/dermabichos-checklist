@@ -372,7 +372,7 @@ export default function FilaClient({ initialChecklists, user }: { initialCheckli
                 placeholder="Informe o motivo da exclusão (obrigatório)..."
                 value={motivoExclusao}
                 onChange={(e) => setMotivoExclusao(e.target.value)}
-                className="min-h-[90px] rounded-xl resize-none"
+                className="min-h-22.5 rounded-xl resize-none"
                 autoFocus
               />
               {!motivoExclusao.trim() && (

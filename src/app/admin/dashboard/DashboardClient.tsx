@@ -793,7 +793,7 @@ export default function DashboardClient({
                     {(selectedChecklist.detalhes?.cuidados_medicos || selectedChecklist.cuidados_medicos) ? (
                       <div className="rounded-2xl border-2 border-red-400 bg-red-50/40 p-4">
                         <div className="flex items-center gap-2 mb-2 text-red-600 font-bold text-sm">
-                          <CiMedicalCross className="size-4 text-red-600 stroke-[1]" />
+                          <CiMedicalCross className="size-4 text-red-600 stroke-1" />
                           Alerta de saúde
                         </div>
                         <p className="text-sm text-red-950 font-medium whitespace-pre-line leading-relaxed">
@@ -810,7 +810,7 @@ export default function DashboardClient({
                         {(selectedChecklist.observacao_cuidados || selectedChecklist.detalhes?.observacao_cuidados) && (
                           <div className="rounded-2xl border-2 border-red-400 bg-red-50/40 p-4">
                             <div className="flex items-center gap-2 mb-2 text-red-600 font-bold text-sm">
-                              <CiMedicalCross className="size-4 text-red-600 stroke-[1]" />
+                              <CiMedicalCross className="size-4 text-red-600 stroke-1" />
                               Alerta de saúde
                             </div>
                             <p className="text-sm text-red-950 font-medium whitespace-pre-line leading-relaxed">
