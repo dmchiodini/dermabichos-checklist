@@ -2,14 +2,11 @@
 
 import React, { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts'
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { getDashboardStats, DashboardStats } from '@/app/actions/dashboard'
-import { format, subDays, startOfMonth, startOfYear, endOfMonth, endOfYear } from 'date-fns'
-import { ptBR } from 'date-fns/locale'
+import { subDays, startOfMonth, startOfYear, endOfMonth, endOfYear } from 'date-fns'
 import { BarChart3, Bath, ClipboardCheck, Dog } from 'lucide-react'
-
-const COLORS = ['#e6789e', '#3f8ab3', '#e0e0e0'] // Rosa, Azul, Cinza
 
 export default function DashboardOverview() {
   const [period, setPeriod] = useState('mes')
@@ -35,13 +32,17 @@ export default function DashboardOverview() {
         endDate = endOfYear(today)
       }
 
-      const statsData = await getDashboardStats(
-        startDate.toISOString().split('T')[0],
-        endDate.toISOString().split('T')[0]
-      )
-      
-      setStats(statsData)
-      setLoading(false)
+      try {
+        const statsData = await getDashboardStats(
+          startDate.toISOString().split('T')[0],
+          endDate.toISOString().split('T')[0]
+        )
+        setStats(statsData)
+      } catch (error) {
+        console.error('Erro ao carregar estatísticas:', error)
+      } finally {
+        setLoading(false)
+      }
     }
 
     loadData()
@@ -54,11 +55,6 @@ export default function DashboardOverview() {
   const statusData = [
     { name: 'Finalizados', value: stats?.finalizados || 0 },
     { name: 'Em andamento', value: stats?.abertos || 0 }
-  ]
-
-  const especieData = [
-    { name: 'Canina', value: stats?.canina || 0 },
-    { name: 'Felina', value: stats?.felina || 0 }
   ]
 
   return (

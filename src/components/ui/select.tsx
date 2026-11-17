@@ -17,7 +17,7 @@ function Select<Value, Multiple extends boolean | undefined = false>({
 
   return (
     <SelectPrimitive.Root
-      value={resolvedValue as any}
+      value={resolvedValue as SelectPrimitive.Root.Props<Value, Multiple>['value']}
       defaultValue={defaultValue}
       onValueChange={onValueChange}
       {...props}

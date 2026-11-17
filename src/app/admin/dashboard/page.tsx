@@ -3,7 +3,11 @@ import Image from 'next/image'
 import { LogOut } from 'lucide-react'
 import { logout } from '@/app/actions/auth'
 import { Button } from '@/components/ui/button'
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { requireAdminPage } from '@/lib/auth/session'
+import { isChecklistStatus, STATUS_EXCLUIDO } from '@/lib/auth/permissions'
+import { endOfLocalDay, isISODate, startOfLocalDay, todayLocalISODate } from '@/lib/dates'
+import { buildPetTutorSearchFilter } from '@/lib/validation'
 import DashboardClient from './DashboardClient'
 
 export const dynamic = 'force-dynamic' // Ensure it always fetches fresh data
@@ -18,30 +22,22 @@ export default async function DashboardPage(props: {
     tab?: string
   }>
 }) {
-  const searchParams = await props.searchParams;
-  const supabase = await createClient()
+  const searchParams = await props.searchParams
+  await requireAdminPage()
+  const supabase = createAdminClient()
 
-  // Calculate today's date correctly adjusting for local timezone
-  const today = new Date()
-  const localDateStr = new Date(today.getTime() - (today.getTimezoneOffset() * 60000)).toISOString().split('T')[0]
+  const today = todayLocalISODate()
+  const pickDate = (...candidates: (string | undefined)[]) => candidates.find(isISODate) ?? today
 
-  const startDateParam = searchParams.startDate || searchParams.date || localDateStr
-  const endDateParam = searchParams.endDate || searchParams.startDate || searchParams.date || localDateStr
+  const startDateParam = pickDate(searchParams.startDate, searchParams.date)
+  const endDateParam = pickDate(searchParams.endDate, searchParams.startDate, searchParams.date)
   const searchFilter = searchParams.search || ''
   const statusFilter = searchParams.status || 'todos'
 
-  // Parse YYYY-MM-DD reliably in local time
-  const [startYear, startMonth, startDay] = startDateParam.split('-').map(Number)
-  const [endYear, endMonth, endDay] = endDateParam.split('-').map(Number)
-
-  let start = new Date(startYear, startMonth - 1, startDay, 0, 0, 0, 0)
-  let end = new Date(endYear, endMonth - 1, endDay, 23, 59, 59, 999)
-
-  if (start > end) {
-    const temp = start
-    start = new Date(endYear, endMonth - 1, endDay, 0, 0, 0, 0)
-    end = new Date(startYear, startMonth - 1, startDay, 23, 59, 59, 999)
-  }
+  // Se as datas vierem invertidas, troca a ordem
+  const [firstDate, lastDate] = startDateParam <= endDateParam ? [startDateParam, endDateParam] : [endDateParam, startDateParam]
+  const start = startOfLocalDay(firstDate)
+  const end = endOfLocalDay(lastDate)
 
   let query = supabase
     .from('checklists')
@@ -50,25 +46,21 @@ export default async function DashboardPage(props: {
     .lte('created_at', end.toISOString())
     .order('created_at', { ascending: false })
 
-  if (statusFilter && statusFilter !== 'todos') {
+  if (isChecklistStatus(statusFilter) || statusFilter === STATUS_EXCLUIDO) {
     query = query.eq('status', statusFilter)
   }
 
-  if (searchFilter) {
-    query = query.or(`pet_nome.ilike.%${searchFilter}%,tutor.ilike.%${searchFilter}%`)
+  const orFilter = searchFilter ? buildPetTutorSearchFilter(searchFilter) : null
+  if (orFilter) {
+    query = query.or(orFilter)
   }
 
-  const { data: checklists } = await query
-
-  const { data: funcionarios } = await supabase
-    .from('funcionarios')
-    .select('*')
-    .order('nome')
-
-  const { data: tiposHidratacao } = await supabase
-    .from('tipos_hidratacao')
-    .select('*')
-    .order('nome')
+  const [{ data: checklists }, { data: funcionarios }, { data: tiposHidratacao }] = await Promise.all([
+    query,
+    // Nunca enviar a coluna "senha" para o navegador
+    supabase.from('funcionarios').select('id, nome, cargo, role, login, foto_url, ativo, created_at').order('nome'),
+    supabase.from('tipos_hidratacao').select('*').order('nome'),
+  ])
 
   return (
     <div className="min-h-screen bg-espuma">

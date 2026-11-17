@@ -4,6 +4,10 @@ import { useEffect, useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { toast } from 'react-toastify'
 import { CiMedicalCross } from 'react-icons/ci'
+import type { jsPDF } from 'jspdf'
+import type { ChecklistRow } from '@/types/database.types'
+
+const errorMessage = (error: unknown) => (error instanceof Error && error.message) || 'Desconhecido'
 
 function Box({ checked, label }: { checked?: boolean; label: string }) {
   return (
@@ -16,23 +20,20 @@ function Box({ checked, label }: { checked?: boolean; label: string }) {
   )
 }
 
-export default function PrintClient({ checklist, funcionarios }: { checklist: any, funcionarios: any[] }) {
+export default function PrintClient({ checklist, funcionarios }: { checklist: ChecklistRow, funcionarios: { id: string; nome: string }[] }) {
   const searchParams = useSearchParams()
   const router = useRouter()
   const [isGenerating, setIsGenerating] = useState(false)
-  const [isShare, setIsShare] = useState(false)
+  const isShare = searchParams.get('share') === 'true'
 
   useEffect(() => {
-    if (searchParams.get('share') === 'true') {
-      setIsShare(true)
-    } else {
-      // Normal print mode
-      const timer = setTimeout(() => {
-        window.print()
-      }, 800)
-      return () => clearTimeout(timer)
-    }
-  }, [searchParams])
+    if (isShare) return
+    // Normal print mode
+    const timer = setTimeout(() => {
+      window.print()
+    }, 800)
+    return () => clearTimeout(timer)
+  }, [isShare])
 
   const downloadBlob = (blob: Blob, filename: string) => {
     const url = URL.createObjectURL(blob)
@@ -99,7 +100,7 @@ export default function PrintClient({ checklist, funcionarios }: { checklist: an
 
   const sharePdf = async () => {
     setIsGenerating(true)
-    let pdfData: { pdf: any; pdfBlob: Blob; filename: string } | null = null
+    let pdfData: { pdf: jsPDF; pdfBlob: Blob; filename: string } | null = null
 
     try {
       pdfData = await generatePdf()
@@ -114,11 +115,11 @@ export default function PrintClient({ checklist, funcionarios }: { checklist: an
             text: `Segue em anexo o checklist do pet ${checklist.pet_nome}.`
           })
           toast.success('Checklist compartilhado com sucesso!')
-        } catch (shareErr: any) {
+        } catch (shareErr: unknown) {
           console.warn('Erro ou cancelamento no compartilhamento:', shareErr)
           // Mesmo dando erro ou cancelamento no compartilhamento, baixa o PDF!
           downloadBlob(pdfBlob, filename)
-          if (shareErr.name !== 'AbortError') {
+          if (!(shareErr instanceof Error && shareErr.name === 'AbortError')) {
             toast.info('Não foi possível abrir o compartilhamento direto, mas o PDF foi baixado com sucesso!')
           }
         }
@@ -127,14 +128,14 @@ export default function PrintClient({ checklist, funcionarios }: { checklist: an
         downloadBlob(pdfBlob, filename)
         toast.success('PDF baixado com sucesso! Você pode enviá-lo pelo WhatsApp Web.')
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error(error)
       // Se o PDF já foi gerado, garante o download mesmo se houver erro
       if (pdfData) {
         downloadBlob(pdfData.pdfBlob, pdfData.filename)
         toast.info('Erro no compartilhamento, mas o PDF foi baixado com sucesso.')
       } else {
-        toast.error('Erro ao gerar documento: ' + (error.message || 'Desconhecido'))
+        toast.error('Erro ao gerar documento: ' + errorMessage(error))
       }
     } finally {
       setIsGenerating(false)
@@ -147,15 +148,15 @@ export default function PrintClient({ checklist, funcionarios }: { checklist: an
       const { pdfBlob, filename } = await generatePdf()
       downloadBlob(pdfBlob, filename)
       toast.success('PDF baixado com sucesso!')
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error(error)
-      toast.error('Erro ao gerar documento: ' + (error.message || 'Desconhecido'))
+      toast.error('Erro ao gerar documento: ' + errorMessage(error))
     } finally {
       setIsGenerating(false)
     }
   }
 
-  const getFuncionarioName = (id: string) => {
+  const getFuncionarioName = (id: string | null) => {
     return funcionarios.find(f => f.id === id)?.nome || id
   }
 

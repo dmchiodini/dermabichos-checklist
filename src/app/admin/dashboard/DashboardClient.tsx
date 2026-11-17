@@ -9,9 +9,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { addFuncionario, toggleFuncionario, deleteFuncionario, updateFuncionario, addTipoHidratacao, toggleTipoHidratacao, updateTipoHidratacao, deleteTipoHidratacao, deleteChecklist } from '@/app/actions/admin'
 import { toast } from 'react-toastify'
-import { Printer, Eye, Trash2, ClipboardList, Users, Droplets, Dog, Cat, Check, Minus, Search, Calendar, Edit2, User, Camera, PieChart, Plus, Filter, RotateCcw } from 'lucide-react'
+import { Printer, Eye, Trash2, ClipboardList, Users, Droplets, Dog, Cat, Check, Minus, Search, Calendar, Edit2, User, Camera, PieChart, Filter, RotateCcw } from 'lucide-react'
 import { CiMedicalCross } from 'react-icons/ci'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { todayLocalISODate } from '@/lib/dates'
+import type { ChecklistRow, FuncionarioAdmin, TipoHidratacaoRow } from '@/types/database.types'
 import DashboardOverview from './DashboardOverview'
 
 const panel = 'rounded-2xl border border-border bg-white'
@@ -60,15 +62,14 @@ export default function DashboardClient({
   initialFuncionarios,
   initialTiposHidratacao
 }: {
-  initialChecklists: any[]
-  initialFuncionarios: any[]
-  initialTiposHidratacao: any[]
+  initialChecklists: ChecklistRow[]
+  initialFuncionarios: FuncionarioAdmin[]
+  initialTiposHidratacao: TipoHidratacaoRow[]
 }) {
   const searchParams = useSearchParams()
   const router = useRouter()
 
-  const today = new Date()
-  const defaultDate = new Date(today.getTime() - (today.getTimezoneOffset() * 60000)).toISOString().split('T')[0]
+  const defaultDate = todayLocalISODate()
 
   const initialStartDate = searchParams.get('startDate') || searchParams.get('date') || defaultDate
   const initialEndDate = searchParams.get('endDate') || searchParams.get('startDate') || searchParams.get('date') || defaultDate
@@ -82,15 +83,18 @@ export default function DashboardClient({
 
   const [currentTab, setCurrentTab] = useState(searchParams.get('tab') || 'visao-geral')
 
-  React.useEffect(() => {
-    setFilterStartDate(searchParams.get('startDate') || searchParams.get('date') || defaultDate)
-    setFilterEndDate(searchParams.get('endDate') || searchParams.get('startDate') || searchParams.get('date') || defaultDate)
-    setFilterStatus(searchParams.get('status') || 'todos')
-    setFilterSearch(searchParams.get('search') || '')
-    if (searchParams.get('tab')) {
-      setCurrentTab(searchParams.get('tab')!)
-    }
-  }, [searchParams, defaultDate])
+  // Sincroniza os filtros quando a URL muda (padrão recomendado pelo React: ajuste durante o render)
+  const searchParamsKey = searchParams.toString()
+  const [prevSearchParamsKey, setPrevSearchParamsKey] = useState(searchParamsKey)
+  if (prevSearchParamsKey !== searchParamsKey) {
+    setPrevSearchParamsKey(searchParamsKey)
+    setFilterStartDate(initialStartDate)
+    setFilterEndDate(initialEndDate)
+    setFilterStatus(initialStatus)
+    setFilterSearch(initialSearch)
+    const tab = searchParams.get('tab')
+    if (tab) setCurrentTab(tab)
+  }
 
   const applyFilters = () => {
     const params = new URLSearchParams()
@@ -120,15 +124,15 @@ export default function DashboardClient({
   const funcFormRef = useRef<HTMLFormElement>(null)
   const hidFormRef = useRef<HTMLFormElement>(null)
 
-  const [editingFuncionario, setEditingFuncionario] = useState<any>(null)
-  const [selectedChecklist, setSelectedChecklist] = useState<any | null>(null)
+  const [editingFuncionario, setEditingFuncionario] = useState<FuncionarioAdmin | null>(null)
+  const [selectedChecklist, setSelectedChecklist] = useState<ChecklistRow | null>(null)
   const [checklistToDelete, setChecklistToDelete] = useState<string | null>(null)
   const [photoPreviewUrl, setPhotoPreviewUrl] = useState<string | null>(null)
   const [editPhotoUrl, setEditPhotoUrl] = useState<string | null>(null)
   const [selectedPhotoFile, setSelectedPhotoFile] = useState<File | null>(null)
   const [isSavingFuncionario, setIsSavingFuncionario] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
-  const [editingTipoHidratacao, setEditingTipoHidratacao] = useState<any>(null)
+  const [editingTipoHidratacao, setEditingTipoHidratacao] = useState<TipoHidratacaoRow | null>(null)
   const [isSavingHidratacao, setIsSavingHidratacao] = useState(false)
 
   return (
@@ -487,7 +491,7 @@ export default function DashboardClient({
                     {(editPhotoUrl || editingFuncionario.foto_url) ? (
                       /* eslint-disable-next-line @next/next/no-img-element */
                       <img
-                        src={editPhotoUrl || editingFuncionario.foto_url}
+                        src={editPhotoUrl || editingFuncionario.foto_url || undefined}
                         alt="Foto do funcionário"
                         className="size-full object-cover"
                       />
@@ -552,7 +556,7 @@ export default function DashboardClient({
                 <div className="flex flex-col sm:flex-row gap-3">
                   <div className="flex-1 flex flex-col gap-3">
                     <Label>Login (Usuário)</Label>
-                    <Input name="login" defaultValue={editingFuncionario.login} required className="h-14" />
+                    <Input name="login" defaultValue={editingFuncionario.login ?? undefined} required className="h-14" />
                   </div>
                   <div className="flex-1 flex flex-col gap-3">
                     <Label>Nova Senha (Opcional)</Label>
@@ -822,7 +826,7 @@ export default function DashboardClient({
                 {(selectedChecklist.foto_1_url || selectedChecklist.foto_2_url) && (
                   <DetailBlock title="Fotos">
                     <div className="flex flex-wrap gap-4">
-                      {[selectedChecklist.foto_1_url, selectedChecklist.foto_2_url].filter(Boolean).map((url, i) => (
+                      {[selectedChecklist.foto_1_url, selectedChecklist.foto_2_url].filter((url): url is string => Boolean(url)).map((url, i) => (
                         <div key={i} className="group relative size-48 overflow-hidden rounded-2xl ring-1 ring-border">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img src={url} alt={`Foto ${i + 1} de ${selectedChecklist.pet_nome}`} className="size-full object-cover transition-transform duration-300 group-hover:scale-105" />
@@ -844,6 +848,7 @@ export default function DashboardClient({
 
                 <DetailBlock title="Assinatura do responsável">
                   {selectedChecklist.assinatura_url && (
+                    /* eslint-disable-next-line @next/next/no-img-element */
                     <img src={selectedChecklist.assinatura_url} alt={`Assinatura de ${selectedChecklist.tutor}`} className="h-32 rounded-2xl border border-border bg-white object-contain px-4" />
                   )}
                 </DetailBlock>

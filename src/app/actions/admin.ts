@@ -1,182 +1,274 @@
 'use server'
 
-import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { AuthError, requireAdmin } from '@/lib/auth/session'
+import { hashPassword } from '@/lib/auth/password'
+import { isUploadableFile, removeFiles, uploadImage, UploadError } from '@/lib/storage'
+import { formString, isUUID } from '@/lib/validation'
+import type { Database } from '@/types/database.types'
+import type { ActionResult } from './auth'
 
-export async function addFuncionario(formData: FormData) {
-  const nome = formData.get('nome') as string
-  const cargo = formData.get('cargo') as string
-  let role = formData.get('role') as string
-  const login = formData.get('login') as string
-  const senha = formData.get('senha') as string
-  const foto = formData.get('foto') as File | null
+type FuncionarioUpdate = Database['public']['Tables']['funcionarios']['Update']
 
-  if (!nome || !cargo || !role || !login || !senha) return { success: false, message: 'Preencha todos os campos obrigatórios' }
-
-  if (role === 'Recepção') role = 'recepcao'
-  if (role === 'Operacional') role = 'operacional'
-
-  const supabase = await createClient()
-
-  let foto_url = null
-  if (foto && foto.size > 0) {
-    const fileExt = foto.name.split('.').pop()
-    const fileName = `funcionarios/${crypto.randomUUID()}.${fileExt}`
-    const arrayBuffer = await foto.arrayBuffer()
-    const buffer = Buffer.from(arrayBuffer)
-
-    const { error: uploadError } = await supabase.storage
-      .from('checklists')
-      .upload(fileName, buffer, { contentType: foto.type, upsert: false })
-
-    if (uploadError) {
-      console.error('Erro no upload da foto do funcionário:', uploadError)
-      return { success: false, message: `Erro ao salvar foto: ${uploadError.message}` }
-    }
-
-    const { data: publicUrlData } = supabase.storage.from('checklists').getPublicUrl(fileName)
-    foto_url = publicUrlData.publicUrl
-  }
-
-  const { error } = await supabase.from('funcionarios').insert({ nome, cargo, role, login, senha, ativo: true, foto_url })
-  
-  if (error) return { success: false, message: error.message }
-  
-  revalidatePath('/admin/dashboard')
-  revalidatePath('/')
-  return { success: true }
+const ROLE_MAP: Record<string, string> = {
+  'Recepção': 'recepcao',
+  'Operacional': 'operacional',
+  recepcao: 'recepcao',
+  operacional: 'operacional',
 }
 
-export async function toggleFuncionario(id: string, currentStatus: boolean) {
-  const supabase = await createClient()
-  await supabase.from('funcionarios').update({ ativo: !currentStatus }).eq('id', id)
-  revalidatePath('/admin/dashboard')
-  revalidatePath('/')
-}
-
-export async function deleteFuncionario(id: string) {
-  const supabase = await createClient()
-  const { error } = await supabase.from('funcionarios').delete().eq('id', id)
-  if (error) {
-    if (error.code === '23503') { // foreign key violation
-      return { success: false, message: 'Não é possível excluir: o usuário já possui checklists vinculados. Apenas desative-o.' }
-    }
+/** Converte exceções conhecidas em mensagens amigáveis, sem vazar detalhes internos. */
+function toErrorResult(error: unknown, fallback: string): ActionResult {
+  if (error instanceof AuthError || error instanceof UploadError) {
     return { success: false, message: error.message }
   }
+  console.error(fallback, error)
+  return { success: false, message: fallback }
+}
+
+function revalidateFuncionarios() {
   revalidatePath('/admin/dashboard')
   revalidatePath('/')
-  return { success: true }
 }
 
-export async function updateFuncionario(formData: FormData) {
-  const id = formData.get('id') as string
-  const nome = formData.get('nome') as string
-  const cargo = formData.get('cargo') as string
-  let role = formData.get('role') as string
-  const login = formData.get('login') as string
-  const senha = formData.get('senha') as string
-  const foto = formData.get('foto') as File | null
-
-  if (!id || !nome || !cargo || !role || !login) return { success: false, message: 'Preencha os campos obrigatórios' }
-
-  if (role === 'Recepção') role = 'recepcao'
-  if (role === 'Operacional') role = 'operacional'
-
-  const supabase = await createClient()
-  
-  const updateData: any = { nome, cargo, role, login }
-  if (senha && senha.trim() !== '') {
-    updateData.senha = senha
-  }
-
-  if (foto && foto.size > 0) {
-    const fileExt = foto.name.split('.').pop()
-    const fileName = `funcionarios/${crypto.randomUUID()}.${fileExt}`
-    const arrayBuffer = await foto.arrayBuffer()
-    const buffer = Buffer.from(arrayBuffer)
-
-    const { error: uploadError } = await supabase.storage
-      .from('checklists')
-      .upload(fileName, buffer, { contentType: foto.type, upsert: false })
-
-    if (uploadError) {
-      console.error('Erro no upload da foto do funcionário:', uploadError)
-      return { success: false, message: `Erro ao salvar foto: ${uploadError.message}` }
-    }
-
-    const { data: publicUrlData } = supabase.storage.from('checklists').getPublicUrl(fileName)
-    updateData.foto_url = publicUrlData.publicUrl
-  }
-
-  const { error } = await supabase.from('funcionarios').update(updateData).eq('id', id)
-  
-  if (error) return { success: false, message: error.message }
-  
-  revalidatePath('/admin/dashboard')
-  revalidatePath('/')
-  return { success: true }
-}
-
-export async function addTipoHidratacao(formData: FormData) {
-  const nome = formData.get('nome') as string
-
-  if (!nome) return { success: false, message: 'Preencha o nome' }
-
-  const supabase = await createClient()
-  const { error } = await supabase.from('tipos_hidratacao').insert({ nome, ativo: true })
-  
-  if (error) return { success: false, message: error.message }
-  
-  revalidatePath('/admin/dashboard')
-  return { success: true }
-}
-
-export async function toggleTipoHidratacao(id: string, currentStatus: boolean) {
-  const supabase = await createClient()
-  await supabase.from('tipos_hidratacao').update({ ativo: !currentStatus }).eq('id', id)
+function revalidateHidratacoes() {
   revalidatePath('/admin/dashboard')
   revalidatePath('/checklist')
   revalidatePath('/')
 }
 
-export async function updateTipoHidratacao(formData: FormData) {
-  const id = formData.get('id') as string
-  const nome = (formData.get('nome') as string)?.trim()
+// ---------------------------------------------------------------------------
+// Funcionários
+// ---------------------------------------------------------------------------
 
-  if (!id || !nome) {
-    return { success: false, message: 'O nome da hidratação é obrigatório' }
-  }
+export async function addFuncionario(formData: FormData): Promise<ActionResult> {
+  try {
+    await requireAdmin()
 
-  const supabase = await createClient()
-  const { error } = await supabase.from('tipos_hidratacao').update({ nome }).eq('id', id)
+    const nome = formString(formData, 'nome')
+    const cargo = formString(formData, 'cargo')
+    const role = ROLE_MAP[formString(formData, 'role')]
+    const login = formData.get('login')
+    const senha = formData.get('senha')
+    const foto = formData.get('foto')
 
-  if (error) return { success: false, message: error.message }
-
-  revalidatePath('/admin/dashboard')
-  revalidatePath('/checklist')
-  revalidatePath('/')
-  return { success: true }
-}
-
-export async function deleteChecklist(id: string) {
-  const supabase = await createClient()
-  const { error } = await supabase.from('checklists').delete().eq('id', id)
-  if (error) return { success: false, message: error.message }
-  
-  revalidatePath('/admin/dashboard')
-  return { success: true }
-}
-
-export async function deleteTipoHidratacao(id: string) {
-  const supabase = await createClient()
-  const { error } = await supabase.from('tipos_hidratacao').delete().eq('id', id)
-  if (error) {
-    if (error.code === '23503') { // foreign key violation
-      return { success: false, message: 'Não é possível excluir hidratação que já foi usada em um checklist.' }
+    if (!nome || !cargo || !role || typeof login !== 'string' || !login || typeof senha !== 'string' || !senha) {
+      return { success: false, message: 'Preencha todos os campos obrigatórios' }
     }
-    return { success: false, message: error.message }
+
+    const supabase = createAdminClient()
+
+    let foto_url: string | null = null
+    let uploadedPath: string | null = null
+    if (isUploadableFile(foto)) {
+      const uploaded = await uploadImage(supabase, 'funcionarios', foto)
+      foto_url = uploaded.publicUrl
+      uploadedPath = uploaded.path
+    }
+
+    const { error } = await supabase.from('funcionarios').insert({
+      nome,
+      cargo,
+      role,
+      login,
+      senha: await hashPassword(senha),
+      ativo: true,
+      foto_url,
+    })
+
+    if (error) {
+      if (uploadedPath) await removeFiles(supabase, [uploadedPath])
+      if (error.code === '23505') return { success: false, message: 'Já existe um funcionário com esse login.' }
+      console.error('[addFuncionario]', error)
+      return { success: false, message: 'Erro ao cadastrar funcionário.' }
+    }
+
+    revalidateFuncionarios()
+    return { success: true }
+  } catch (error) {
+    return toErrorResult(error, 'Erro ao cadastrar funcionário.')
   }
-  revalidatePath('/admin/dashboard')
-  return { success: true }
 }
 
+export async function toggleFuncionario(id: string, currentStatus: boolean): Promise<ActionResult> {
+  try {
+    await requireAdmin()
+    if (!isUUID(id)) return { success: false, message: 'Funcionário inválido.' }
+
+    const supabase = createAdminClient()
+    const { error } = await supabase.from('funcionarios').update({ ativo: !currentStatus }).eq('id', id)
+    if (error) throw error
+
+    revalidateFuncionarios()
+    return { success: true }
+  } catch (error) {
+    return toErrorResult(error, 'Erro ao alterar status do funcionário.')
+  }
+}
+
+export async function deleteFuncionario(id: string): Promise<ActionResult> {
+  try {
+    await requireAdmin()
+    if (!isUUID(id)) return { success: false, message: 'Funcionário inválido.' }
+
+    const supabase = createAdminClient()
+    const { error } = await supabase.from('funcionarios').delete().eq('id', id)
+    if (error) {
+      if (error.code === '23503') {
+        return { success: false, message: 'Não é possível excluir: o usuário já possui checklists vinculados. Apenas desative-o.' }
+      }
+      throw error
+    }
+
+    revalidateFuncionarios()
+    return { success: true }
+  } catch (error) {
+    return toErrorResult(error, 'Erro ao excluir funcionário.')
+  }
+}
+
+export async function updateFuncionario(formData: FormData): Promise<ActionResult> {
+  try {
+    await requireAdmin()
+
+    const id = formString(formData, 'id')
+    const nome = formString(formData, 'nome')
+    const cargo = formString(formData, 'cargo')
+    const role = ROLE_MAP[formString(formData, 'role')]
+    const login = formData.get('login')
+    const senha = formData.get('senha')
+    const foto = formData.get('foto')
+
+    if (!isUUID(id) || !nome || !cargo || !role || typeof login !== 'string' || !login) {
+      return { success: false, message: 'Preencha os campos obrigatórios' }
+    }
+
+    const supabase = createAdminClient()
+    const updateData: FuncionarioUpdate = { nome, cargo, role, login }
+
+    if (typeof senha === 'string' && senha.trim() !== '') {
+      updateData.senha = await hashPassword(senha)
+    }
+
+    let uploadedPath: string | null = null
+    if (isUploadableFile(foto)) {
+      const uploaded = await uploadImage(supabase, 'funcionarios', foto)
+      updateData.foto_url = uploaded.publicUrl
+      uploadedPath = uploaded.path
+    }
+
+    const { error } = await supabase.from('funcionarios').update(updateData).eq('id', id)
+    if (error) {
+      if (uploadedPath) await removeFiles(supabase, [uploadedPath])
+      if (error.code === '23505') return { success: false, message: 'Já existe um funcionário com esse login.' }
+      console.error('[updateFuncionario]', error)
+      return { success: false, message: 'Erro ao atualizar funcionário.' }
+    }
+
+    revalidateFuncionarios()
+    return { success: true }
+  } catch (error) {
+    return toErrorResult(error, 'Erro ao atualizar funcionário.')
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Tipos de hidratação
+// ---------------------------------------------------------------------------
+
+export async function addTipoHidratacao(formData: FormData): Promise<ActionResult> {
+  try {
+    await requireAdmin()
+
+    const nome = formString(formData, 'nome')
+    if (!nome) return { success: false, message: 'Preencha o nome' }
+
+    const supabase = createAdminClient()
+    const { error } = await supabase.from('tipos_hidratacao').insert({ nome, ativo: true })
+    if (error) throw error
+
+    revalidatePath('/admin/dashboard')
+    return { success: true }
+  } catch (error) {
+    return toErrorResult(error, 'Erro ao cadastrar hidratação.')
+  }
+}
+
+export async function toggleTipoHidratacao(id: string, currentStatus: boolean): Promise<ActionResult> {
+  try {
+    await requireAdmin()
+    if (!isUUID(id)) return { success: false, message: 'Hidratação inválida.' }
+
+    const supabase = createAdminClient()
+    const { error } = await supabase.from('tipos_hidratacao').update({ ativo: !currentStatus }).eq('id', id)
+    if (error) throw error
+
+    revalidateHidratacoes()
+    return { success: true }
+  } catch (error) {
+    return toErrorResult(error, 'Erro ao alterar status da hidratação.')
+  }
+}
+
+export async function updateTipoHidratacao(formData: FormData): Promise<ActionResult> {
+  try {
+    await requireAdmin()
+
+    const id = formString(formData, 'id')
+    const nome = formString(formData, 'nome')
+    if (!isUUID(id) || !nome) {
+      return { success: false, message: 'O nome da hidratação é obrigatório' }
+    }
+
+    const supabase = createAdminClient()
+    const { error } = await supabase.from('tipos_hidratacao').update({ nome }).eq('id', id)
+    if (error) throw error
+
+    revalidateHidratacoes()
+    return { success: true }
+  } catch (error) {
+    return toErrorResult(error, 'Erro ao atualizar hidratação.')
+  }
+}
+
+export async function deleteTipoHidratacao(id: string): Promise<ActionResult> {
+  try {
+    await requireAdmin()
+    if (!isUUID(id)) return { success: false, message: 'Hidratação inválida.' }
+
+    const supabase = createAdminClient()
+    const { error } = await supabase.from('tipos_hidratacao').delete().eq('id', id)
+    if (error) {
+      if (error.code === '23503') {
+        return { success: false, message: 'Não é possível excluir hidratação que já foi usada em um checklist.' }
+      }
+      throw error
+    }
+
+    revalidatePath('/admin/dashboard')
+    return { success: true }
+  } catch (error) {
+    return toErrorResult(error, 'Erro ao excluir hidratação.')
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Checklists
+// ---------------------------------------------------------------------------
+
+export async function deleteChecklist(id: string): Promise<ActionResult> {
+  try {
+    await requireAdmin()
+    if (!isUUID(id)) return { success: false, message: 'Checklist inválido.' }
+
+    const supabase = createAdminClient()
+    const { error } = await supabase.from('checklists').delete().eq('id', id)
+    if (error) throw error
+
+    revalidatePath('/admin/dashboard')
+    return { success: true }
+  } catch (error) {
+    return toErrorResult(error, 'Erro ao excluir checklist.')
+  }
+}

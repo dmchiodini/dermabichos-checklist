@@ -1,25 +1,30 @@
 'use server'
 
-import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
+import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { createFuncionarioSession, destroyFuncionarioSession } from '@/lib/auth/session'
+import { hashPassword, verifyPassword } from '@/lib/auth/password'
+import { formString } from '@/lib/validation'
 
-export async function login(formData: FormData) {
-  const email = formData.get('email') as string
-  const password = formData.get('password') as string
+export type ActionResult = { success: boolean; message?: string }
+
+export async function login(formData: FormData): Promise<ActionResult> {
+  const email = formString(formData, 'email')
+  const password = formData.get('password')
+
+  if (!email || typeof password !== 'string' || !password) {
+    return { success: false, message: 'E-mail ou senha incorretos' }
+  }
 
   const supabase = await createClient()
-
-  const { error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  })
+  const { error } = await supabase.auth.signInWithPassword({ email, password })
 
   if (error) {
     console.error('[login]', error.status, error.code, error.message)
     return { success: false, message: 'E-mail ou senha incorretos' }
   }
 
-  // Redireciona em caso de sucesso
   redirect('/admin/dashboard')
 }
 
@@ -29,39 +34,55 @@ export async function logout() {
   redirect('/admin/login')
 }
 
-export async function loginFuncionario(prevState: any, formData: FormData) {
-  const loginField = formData.get('login') as string
-  const senhaField = formData.get('senha') as string
+const LOGIN_FUNCIONARIO_ERRO = 'Usuário ou senha incorretos (ou inativo)'
 
-  const supabase = await createClient()
-  const { data: func } = await supabase.from('funcionarios').select('*').eq('login', loginField).eq('senha', senhaField).eq('ativo', true).single()
+export async function loginFuncionario(_prevState: ActionResult | null, formData: FormData): Promise<ActionResult> {
+  // Login sem trim: preserva exatamente o que foi cadastrado.
+  const login = formData.get('login')
+  const senha = formData.get('senha')
 
-  if (!func) {
-    return { success: false, message: 'Usuário ou senha incorretos (ou inativo)' }
+  if (typeof login !== 'string' || !login || typeof senha !== 'string' || !senha) {
+    return { success: false, message: LOGIN_FUNCIONARIO_ERRO }
   }
 
-  // Set secure cookie using next/headers
-  const { cookies } = await import('next/headers')
-  const cookieStore = await cookies()
-  cookieStore.set('funcionario_session', JSON.stringify({
-    id: func.id,
-    nome: func.nome,
-    cargo: func.cargo,
-    role: func.role || 'operacional',
-    foto_url: func.foto_url
-  }), {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    maxAge: 60 * 60 * 24 * 7 // 1 week
-  })
+  const supabase = createAdminClient()
+  const { data: candidatos, error } = await supabase
+    .from('funcionarios')
+    .select('id, senha')
+    .eq('login', login)
+    .eq('ativo', true)
 
+  if (error) {
+    console.error('[loginFuncionario]', error)
+    return { success: false, message: LOGIN_FUNCIONARIO_ERRO }
+  }
+
+  let funcionarioId: string | null = null
+  for (const candidato of candidatos ?? []) {
+    const { valid, needsRehash } = await verifyPassword(senha, candidato.senha)
+    if (!valid) continue
+
+    funcionarioId = candidato.id
+    if (needsRehash) {
+      // Migração transparente: senhas antigas em texto puro passam a ser gravadas com hash.
+      const { error: rehashError } = await supabase
+        .from('funcionarios')
+        .update({ senha: await hashPassword(senha) })
+        .eq('id', candidato.id)
+      if (rehashError) console.error('[loginFuncionario] falha ao migrar hash da senha:', rehashError)
+    }
+    break
+  }
+
+  if (!funcionarioId) {
+    return { success: false, message: LOGIN_FUNCIONARIO_ERRO }
+  }
+
+  await createFuncionarioSession(funcionarioId)
   redirect('/')
 }
 
 export async function logoutFuncionario() {
-  const { cookies } = await import('next/headers')
-  const cookieStore = await cookies()
-  cookieStore.delete('funcionario_session')
+  await destroyFuncionarioSession()
   redirect('/login')
 }

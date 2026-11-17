@@ -222,3 +222,17 @@ export interface Database {
     }
   }
 }
+
+type Tables = Database['public']['Tables']
+
+export type ChecklistRow = Tables['checklists']['Row']
+export type ChecklistInsert = Tables['checklists']['Insert']
+export type ChecklistUpdate = Tables['checklists']['Update']
+export type FuncionarioRow = Tables['funcionarios']['Row']
+export type TipoHidratacaoRow = Tables['tipos_hidratacao']['Row']
+
+/** Dados públicos de funcionário (nunca inclui login/senha). */
+export type FuncionarioPublico = Pick<FuncionarioRow, 'id' | 'nome' | 'cargo'>
+
+/** Dados de funcionário exibidos no painel administrativo (sem senha). */
+export type FuncionarioAdmin = Pick<FuncionarioRow, 'id' | 'nome' | 'cargo' | 'role' | 'login' | 'foto_url' | 'ativo' | 'created_at'>

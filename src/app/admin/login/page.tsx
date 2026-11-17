@@ -21,7 +21,7 @@ export default function LoginPage() {
 
     // Se chegou aqui e tem result, é porque deu erro (o redirect aborta a função em caso de sucesso)
     if (result && !result.success) {
-      setError(result.message)
+      setError(result.message ?? 'E-mail ou senha incorretos')
       setIsPending(false)
     }
   }

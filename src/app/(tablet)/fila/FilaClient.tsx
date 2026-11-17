@@ -1,10 +1,10 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Plus, Clock, Play, CheckCircle2, ChevronRight, ShowerHead, Share2, Search, Calendar, User, RefreshCw, Trash2 } from 'lucide-react'
+import { Plus, Clock, Play, CheckCircle2, ChevronRight, ShowerHead, Share2, Search, Calendar, RefreshCw, Trash2 } from 'lucide-react'
 import { CiMedicalCross } from 'react-icons/ci'
 import { toast } from 'react-toastify'
 import { updateChecklistStatus, getFilteredChecklists, softDeleteChecklist } from '@/app/actions/checklist'
@@ -14,30 +14,52 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { cn } from '@/lib/utils'
+import { todayLocalISODate } from '@/lib/dates'
+import { isRecepcao as checkRecepcao, type SessionUser } from '@/lib/auth/permissions'
 import { logoutFuncionario } from '@/app/actions/auth'
+import type { ChecklistRow } from '@/types/database.types'
 
-export default function FilaClient({ initialChecklists, user }: { initialChecklists: any[], user: any }) {
+const hasAlertaSaude = (checklist: ChecklistRow) => Boolean(checklist.detalhes?.cuidados_medicos || checklist.cuidados_medicos)
+const getObservacaoCuidados = (checklist: ChecklistRow) => checklist.detalhes?.observacao_cuidados || checklist.observacao_cuidados
+
+export default function FilaClient({ initialChecklists, user }: { initialChecklists: ChecklistRow[], user: SessionUser }) {
   const [filterSearch, setFilterSearch] = useState('')
-  const [filterDate, setFilterDate] = useState(() => {
-    const today = new Date()
-    return new Date(today.getTime() - (today.getTimezoneOffset() * 60000)).toISOString().split('T')[0]
-  })
+  const [filterDate, setFilterDate] = useState(todayLocalISODate)
 
   const [checklists, setChecklists] = useState(initialChecklists)
-  const [checklistToDelete, setChecklistToDelete] = useState<any | null>(null)
+  const [checklistToDelete, setChecklistToDelete] = useState<ChecklistRow | null>(null)
   const [motivoExclusao, setMotivoExclusao] = useState('')
   const [isDeleting, setIsDeleting] = useState(false)
   const router = useRouter()
 
-  const isRecepcao = user.role === 'recepcao' || user.cargo?.toLowerCase() === 'recepção' || user.cargo?.toLowerCase() === 'recepcao'
+  const isRecepcao = checkRecepcao(user)
+
+  // Guarda o termo de busca atual para a recarga automática ao trocar a data
+  const filterSearchRef = useRef(filterSearch)
+  useEffect(() => {
+    filterSearchRef.current = filterSearch
+  }, [filterSearch])
+
+  const fetchChecklists = (date: string, search: string) =>
+    getFilteredChecklists(date, search).catch((error) => {
+      console.error(error)
+      toast.error('Não foi possível atualizar a fila. Faça login novamente.')
+      return null
+    })
 
   const applyFilters = async () => {
-    const data = await getFilteredChecklists(user, filterDate, filterSearch)
-    setChecklists(data)
+    const data = await fetchChecklists(filterDate, filterSearch)
+    if (data) setChecklists(data)
   }
 
-  React.useEffect(() => {
-    applyFilters()
+  useEffect(() => {
+    let ignore = false
+    fetchChecklists(filterDate, filterSearchRef.current).then((data) => {
+      if (!ignore && data) setChecklists(data)
+    })
+    return () => {
+      ignore = true
+    }
   }, [filterDate])
 
   const handleStatusChange = async (id: string, newStatus: string) => {
@@ -49,7 +71,7 @@ export default function FilaClient({ initialChecklists, user }: { initialCheckli
       } else {
         toast.error(res.message)
       }
-    } catch (error) {
+    } catch {
       toast.error('Erro ao atualizar status')
     }
   }
@@ -69,12 +91,9 @@ export default function FilaClient({ initialChecklists, user }: { initialCheckli
     }
   }
 
-  const handleShare = (checklist: any) => {
+  const handleShare = (checklist: ChecklistRow) => {
     router.push(`/admin/print/${checklist.id}?share=true`)
   }
-
-  const agendamentosHoje = checklists.length
-  const finalizados = checklists.filter(c => c.status === 'Finalizado').length
 
   return (
     <main className="min-h-screen overflow-x-clip bg-espuma px-3 py-6 md:px-8 md:py-10">
@@ -225,7 +244,7 @@ export default function FilaClient({ initialChecklists, user }: { initialCheckli
                   <p className="text-muted-foreground text-sm font-medium mb-3">{checklist.raca} ({checklist.especie})</p>
                   <p className="text-sm font-medium text-foreground"><span className="text-muted-foreground">Responsável:</span> {checklist.tutor}</p>
 
-                  {((checklist.detalhes as any)?.cuidados_medicos || (checklist as any).cuidados_medicos) && (
+                  {hasAlertaSaude(checklist) && (
                     <div className="mt-3 flex items-start gap-2 rounded-xl border border-red-200 bg-red-50/80 p-2 text-xs text-red-700">
                       <CiMedicalCross className="size-4 shrink-0 text-red-600 mt-0.5" />
                       <span className="font-semibold line-clamp-2">
@@ -233,11 +252,11 @@ export default function FilaClient({ initialChecklists, user }: { initialCheckli
                       </span>
                     </div>
                   )}
-                  {!((checklist.detalhes as any)?.cuidados_medicos || (checklist as any).cuidados_medicos) && ((checklist.detalhes as any)?.observacao_cuidados || (checklist as any).observacao_cuidados) && (
+                  {!hasAlertaSaude(checklist) && getObservacaoCuidados(checklist) && (
                     <div className="mt-3 flex items-start gap-2 rounded-xl border border-red-200 bg-red-50/80 p-2 text-xs text-red-700">
                       <CiMedicalCross className="size-4 shrink-0 text-red-600 mt-0.5" />
                       <span className="font-semibold line-clamp-2">
-                        {(checklist.detalhes as any)?.observacao_cuidados || (checklist as any).observacao_cuidados}
+                        {getObservacaoCuidados(checklist)}
                       </span>
                     </div>
                   )}

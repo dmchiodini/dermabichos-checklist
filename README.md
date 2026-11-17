@@ -1,36 +1,48 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Dermabichos Check
 
-## Getting Started
+Sistema de checklist de banho e tosa: tablet da recepção/equipe + painel administrativo.
 
-First, run the development server:
+- **Next.js 16** (App Router, Server Actions, `proxy.ts`)
+- **Supabase** (Postgres, Storage e Auth do painel admin)
+- React 19, Tailwind CSS 4, react-hook-form + zod
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## Configuração
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+1. Instale as dependências: `npm install`
+2. Copie `.env.example` para `.env.local` e preencha:
+   - `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   - `SUPABASE_SERVICE_ROLE_KEY`: chave **service_role** (somente servidor)
+   - `SESSION_SECRET`: segredo aleatório com 32 caracteres ou mais
+3. Rode `npm run dev` e acesse http://localhost:3000
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Em produção (Vercel etc.), cadastre as mesmas variáveis no painel de ambiente.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Banco de dados
 
-## Learn More
+Scripts SQL na raiz (execute no SQL Editor do Supabase):
 
-To learn more about Next.js, take a look at the following resources:
+| Arquivo | Função |
+| --- | --- |
+| `supabase_tabelas.sql` | Tabelas base |
+| `supabase_setup.sql` | Bucket de Storage `checklists` |
+| `supabase_adicionar_observacao_cuidados.sql` | Coluna opcional |
+| `supabase_seguranca.sql` | **RLS e remoção do acesso público.** Rode depois que o sistema estiver publicado com `SUPABASE_SERVICE_ROLE_KEY` |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Também é recomendado desativar novos cadastros em **Supabase > Authentication > Sign In / Providers > "Allow new users to sign up"**, para que só os administradores já criados acessem o painel.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Arquitetura de segurança
 
-## Deploy on Vercel
+- **Todo acesso a dados acontece no servidor.** O navegador nunca fala direto com o banco.
+- `src/lib/auth/session.ts`:
+  - **Tablet:** cookie `funcionario_session` assinado com HMAC (`SESSION_SECRET`). O funcionário é relido do banco a cada requisição, então desativá-lo corta o acesso na hora.
+  - **Admin:** Supabase Auth (`requireAdmin`).
+- `src/lib/auth/permissions.ts`: regras de acesso. A recepção vê e gerencia todos os checklists; o operacional vê só os que realiza e não pode finalizar nem excluir.
+- `src/lib/auth/password.ts`: senhas com hash **scrypt**. Senhas antigas em texto puro são convertidas automaticamente no próximo login de cada funcionário.
+- `src/lib/storage.ts`: uploads validados (tipo de imagem, tamanho máximo de 10 MB, assinatura PNG real).
+- Todas as Server Actions validam a sessão e os parâmetros antes de executar.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Scripts
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `npm run dev`: desenvolvimento
+- `npm run build`: build de produção
+- `npm run lint`: ESLint

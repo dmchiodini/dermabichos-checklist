@@ -1,20 +1,18 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import Image from 'next/image'
-import { useForm, Controller } from 'react-hook-form'
+import { useForm, useWatch, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Trash2, Check, ChevronsUpDown, Camera, X, User, Plus } from 'lucide-react'
+import { Trash2, Check, ChevronsUpDown, Camera, X } from 'lucide-react'
 import { CiMedicalCross } from 'react-icons/ci'
 import { checklistSchema, ChecklistFormValues } from '@/schemas/checklist.schema'
 import { SignaturePad } from '@/components/signature-pad'
-import { submitChecklist, getLookupData, updateChecklistStatus, softDeleteChecklist } from '@/app/actions/checklist'
+import { submitChecklist, getLookupData, getChecklistForEdit, updateChecklistStatus, softDeleteChecklist } from '@/app/actions/checklist'
 import { cn } from '@/lib/utils'
-import { useEffect } from 'react'
 import { toast } from 'react-toastify'
-import { Database } from '@/types/database.types'
+import type { FuncionarioPublico } from '@/types/database.types'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
 
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -101,7 +99,14 @@ function ServiceToggle({ id, label, checked, onCheckedChange }: {
   )
 }
 
-export default function TabletClient({ user, isRecepcao = true }: { user?: any, isRecepcao?: boolean }) {
+const defaultDetalhes = {
+  laco: false,
+  brilho: false,
+  perfume: false,
+  escova_dente: false,
+}
+
+export default function TabletClient({ isRecepcao = true }: { isRecepcao?: boolean }) {
   const searchParams = useSearchParams()
   const router = useRouter()
   const editId = searchParams.get('edit')
@@ -115,33 +120,36 @@ export default function TabletClient({ user, isRecepcao = true }: { user?: any, 
   const [motivoExclusao, setMotivoExclusao] = useState('')
   const [isDeleting, setIsDeleting] = useState(false)
 
-  const [funcionarios, setFuncionarios] = useState<Database['public']['Tables']['funcionarios']['Row'][]>([])
-  const [hidratacoes, setHidratacoes] = useState<Database['public']['Tables']['tipos_hidratacao']['Row'][]>([])
+  const [funcionarios, setFuncionarios] = useState<FuncionarioPublico[]>([])
+  const [hidratacoes, setHidratacoes] = useState<{ id: string; nome: string }[]>([])
 
   useEffect(() => {
-    getLookupData().then(data => {
-      setFuncionarios(data?.funcionarios)
-      setHidratacoes(data?.hidratacoes)
-    })
+    getLookupData()
+      .then(data => {
+        setFuncionarios(data.funcionarios)
+        setHidratacoes(data.hidratacoes)
+      })
+      .catch((error) => {
+        console.error(error)
+        toast.error('Não foi possível carregar funcionários e hidratações. Faça login novamente.')
+      })
   }, [])
+
+  // Pré-visualização das fotos novas (libera a memória ao trocar/remover)
+  const fotoPreviews = useMemo(() => fotos.map((foto) => URL.createObjectURL(foto)), [fotos])
+  useEffect(() => () => fotoPreviews.forEach((url) => URL.revokeObjectURL(url)), [fotoPreviews])
 
   const {
     register,
     handleSubmit,
     control,
-    watch,
     reset,
     setValue,
     formState: { errors },
   } = useForm({
     resolver: zodResolver(checklistSchema),
     defaultValues: {
-      detalhes: {
-        laco: false,
-        brilho: false,
-        perfume: false,
-        escova_dente: false,
-      },
+      detalhes: defaultDetalhes,
       tosa: {
         higienica: false,
         maquina: false,
@@ -158,15 +166,21 @@ export default function TabletClient({ user, isRecepcao = true }: { user?: any, 
     },
   })
 
-  const especie = watch('especie')
-  const cuidadosMedicos = watch('cuidados_medicos')
+  const especie = useWatch({ control, name: 'especie' })
+  const cuidadosMedicos = useWatch({ control, name: 'cuidados_medicos' })
   const racaOptions = especie === 'Felina' ? catBreeds : dogBreeds
 
   useEffect(() => {
     if (editId) {
       const loadChecklist = async () => {
-        const supabase = createClient()
-        const { data } = await supabase.from('checklists').select('*').eq('id', editId).single()
+        const data = await getChecklistForEdit(editId).catch((error) => {
+          console.error(error)
+          return null
+        })
+        if (!data) {
+          toast.error('Checklist não encontrado ou sem permissão de acesso.')
+          return
+        }
         if (data) {
           reset({
             id: data.id,
@@ -174,16 +188,16 @@ export default function TabletClient({ user, isRecepcao = true }: { user?: any, 
             especie: data.especie,
             raca: data.raca,
             tutor: data.tutor,
-            detalhes: data.detalhes,
-            tosa: data.tosa,
-            hidratacao: data.hidratacao,
-            cuidados_medicos: Boolean((data.detalhes as any)?.cuidados_medicos || (data as any).cuidados_medicos),
+            detalhes: data.detalhes ?? defaultDetalhes,
+            tosa: data.tosa ?? { higienica: false, maquina: false, tesoura: false },
+            hidratacao: data.hidratacao ?? { qual: '', shampoo_terapeutico: false },
+            cuidados_medicos: Boolean(data.detalhes?.cuidados_medicos || data.cuidados_medicos),
             observacao: data.observacao || '',
             realizado_por_id: data.realizado_por_id,
             vistoriado_por_id: data.vistoriado_por_id,
             termo_aceito: data.termo_aceito,
             assinatura: data.assinatura_url || '',
-          } as any)
+          })
 
           const loadedFotos = []
           if (data.foto_1_url) loadedFotos.push(data.foto_1_url)
@@ -209,16 +223,25 @@ export default function TabletClient({ user, isRecepcao = true }: { user?: any, 
       fotos.forEach((foto) => {
         formData.append('fotos', foto)
       })
+      // Fotos já salvas que o usuário manteve (as removidas deixam de ser enviadas)
+      existingFotos.forEach((url) => {
+        formData.append('fotosMantidas', url)
+      })
 
       if (editId) data.id = editId
 
       const result = await submitChecklist(data, formData)
 
       if (result.success) {
-        const shouldFinalize = editId && (actionType === 'finalize' || checklistStatus === 'Banho finalizado')
+        // Somente a recepção finaliza o atendimento
+        const shouldFinalize = isRecepcao && editId && (actionType === 'finalize' || checklistStatus === 'Banho finalizado')
         if (shouldFinalize) {
-          await updateChecklistStatus(editId, 'Finalizado')
-          toast.success('Checklist finalizado com sucesso!')
+          const statusResult = await updateChecklistStatus(editId, 'Finalizado')
+          if (statusResult.success) {
+            toast.success('Checklist finalizado com sucesso!')
+          } else {
+            toast.error('Checklist salvo, mas não foi possível finalizar: ' + statusResult.message)
+          }
         } else {
           toast.success(editId ? 'Checklist atualizado com sucesso!' : 'Checklist iniciado com sucesso!')
         }
@@ -542,11 +565,11 @@ export default function TabletClient({ user, isRecepcao = true }: { user?: any, 
                       </div>
                     ))}
 
-                    {fotos.map((foto, index) => (
-                      <div key={index} className="relative size-32 overflow-hidden rounded-2xl ring-1 ring-border">
+                    {fotoPreviews.map((previewUrl, index) => (
+                      <div key={previewUrl} className="relative size-32 overflow-hidden rounded-2xl ring-1 ring-border">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
-                          src={URL.createObjectURL(foto)}
+                          src={previewUrl}
                           alt={`Foto nova ${index + 1}`}
                           className="size-full object-cover"
                         />
