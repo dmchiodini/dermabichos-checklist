@@ -30,6 +30,14 @@ Scripts SQL na raiz (execute no SQL Editor do Supabase):
 
 Também é recomendado desativar novos cadastros em **Supabase > Authentication > Sign In / Providers > "Allow new users to sign up"**, para que só os administradores já criados acessem o painel.
 
+## Senha do administrador
+
+- **Esqueci minha senha:** link na tela `/admin/login`. O e-mail leva para `/auth/confirm` e depois para `/admin/redefinir-senha`.
+- **Alterar senha:** botão "Alterar senha" no cabeçalho do painel. Exige a senha atual.
+- Configuração única no Supabase, em **Authentication > URL Configuration**:
+  - Site URL: `https://dermabichos-checklist.vercel.app`
+  - Redirect URLs: `https://dermabichos-checklist.vercel.app/**` e `http://localhost:3000/**`
+
 ## Arquitetura de segurança
 
 - **Todo acesso a dados acontece no servidor.** O navegador nunca fala direto com o banco.

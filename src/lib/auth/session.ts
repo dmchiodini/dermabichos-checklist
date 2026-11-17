@@ -1,6 +1,5 @@
 import 'server-only'
 
-import { createHmac, timingSafeEqual } from 'node:crypto'
 import { cache } from 'react'
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
@@ -8,6 +7,7 @@ import type { User } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import type { SessionUser } from './permissions'
+import { decodeSignedToken, encodeSignedToken } from './signed-token'
 
 export const FUNCIONARIO_COOKIE = 'funcionario_session'
 const SESSION_MAX_AGE = 60 * 60 * 24 * 7 // 1 semana
@@ -21,48 +21,15 @@ export class AuthError extends Error {
   }
 }
 
-function getSessionSecret(): string {
-  const secret = process.env.SESSION_SECRET
-  if (!secret || secret.length < 32) {
-    throw new Error(
-      'Variável de ambiente SESSION_SECRET ausente ou curta demais (mínimo 32 caracteres). ' +
-      'Gere uma com: node -e "console.log(require(\'crypto\').randomBytes(48).toString(\'base64url\'))"'
-    )
-  }
-  return secret
-}
-
-function sign(value: string): string {
-  return createHmac('sha256', getSessionSecret()).update(value).digest('base64url')
-}
-
-function encodeSession(payload: SessionPayload): string {
-  const body = Buffer.from(JSON.stringify(payload)).toString('base64url')
-  return `${body}.${sign(body)}`
-}
-
 function decodeSession(token: string | undefined): SessionPayload | null {
-  if (!token) return null
-  const [body, signature] = token.split('.')
-  if (!body || !signature) return null
-
-  const expected = Buffer.from(sign(body))
-  const received = Buffer.from(signature)
-  if (expected.length !== received.length || !timingSafeEqual(expected, received)) return null
-
-  try {
-    const payload = JSON.parse(Buffer.from(body, 'base64url').toString('utf8')) as Partial<SessionPayload>
-    if (typeof payload.id !== 'string' || typeof payload.exp !== 'number') return null
-    if (payload.exp < Date.now()) return null
-    return { id: payload.id, exp: payload.exp }
-  } catch {
-    return null
-  }
+  const payload = decodeSignedToken<Partial<SessionPayload>>(token)
+  if (!payload || typeof payload.id !== 'string') return null
+  return { id: payload.id, exp: payload.exp }
 }
 
 export async function createFuncionarioSession(funcionarioId: string) {
   const cookieStore = await cookies()
-  cookieStore.set(FUNCIONARIO_COOKIE, encodeSession({ id: funcionarioId, exp: Date.now() + SESSION_MAX_AGE * 1000 }), {
+  cookieStore.set(FUNCIONARIO_COOKIE, encodeSignedToken({ id: funcionarioId }, SESSION_MAX_AGE), {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
@@ -135,4 +102,34 @@ export async function requireAdminPage(): Promise<User> {
   const user = await getAdminUser()
   if (!user) redirect('/admin/login')
   return user
+}
+
+// ---------------------------------------------------------------------------
+// Recuperação de senha do admin
+// ---------------------------------------------------------------------------
+
+const ADMIN_RECOVERY_COOKIE = 'admin_recovery'
+const ADMIN_RECOVERY_MAX_AGE = 60 * 15 // 15 minutos para definir a nova senha
+
+/** Marca que o admin entrou pelo link de recuperação (dispensa a senha atual). */
+export async function grantAdminRecovery(userId: string) {
+  const cookieStore = await cookies()
+  cookieStore.set(ADMIN_RECOVERY_COOKIE, encodeSignedToken({ uid: userId }, ADMIN_RECOVERY_MAX_AGE), {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    path: '/admin',
+    maxAge: ADMIN_RECOVERY_MAX_AGE,
+  })
+}
+
+export async function hasAdminRecovery(userId: string): Promise<boolean> {
+  const cookieStore = await cookies()
+  const payload = decodeSignedToken<{ uid?: string }>(cookieStore.get(ADMIN_RECOVERY_COOKIE)?.value)
+  return payload?.uid === userId
+}
+
+export async function clearAdminRecovery() {
+  const cookieStore = await cookies()
+  cookieStore.delete({ name: ADMIN_RECOVERY_COOKIE, path: '/admin' })
 }

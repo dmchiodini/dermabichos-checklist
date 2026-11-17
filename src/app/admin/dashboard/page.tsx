@@ -1,6 +1,7 @@
 import React from 'react'
 import Image from 'next/image'
-import { LogOut } from 'lucide-react'
+import Link from 'next/link'
+import { KeyRound, LogOut } from 'lucide-react'
 import { logout } from '@/app/actions/auth'
 import { Button } from '@/components/ui/button'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -73,12 +74,21 @@ export default async function DashboardPage(props: {
               <p className="text-sm text-muted-foreground">Painel administrativo</p>
             </div>
           </div>
-          <form action={logout}>
-            <Button variant="ghost" type="submit" className="h-10 rounded-xl px-3 text-base font-semibold text-muted-foreground">
-              <LogOut className="size-4" aria-hidden />
-              Sair
-            </Button>
-          </form>
+          <div className="flex items-center gap-1">
+            <Link
+              href="/admin/redefinir-senha"
+              className="inline-flex h-10 items-center gap-2 rounded-xl px-3 text-base font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            >
+              <KeyRound className="size-4" aria-hidden />
+              <span className="hidden sm:inline">Alterar senha</span>
+            </Link>
+            <form action={logout}>
+              <Button variant="ghost" type="submit" className="h-10 rounded-xl px-3 text-base font-semibold text-muted-foreground">
+                <LogOut className="size-4" aria-hidden />
+                Sair
+              </Button>
+            </form>
+          </div>
         </div>
       </header>
 

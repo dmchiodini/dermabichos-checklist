@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import Image from 'next/image'
+import Link from 'next/link'
 
 export default function LoginPage() {
   const [error, setError] = useState<string | null>(null)
@@ -62,7 +63,12 @@ export default function LoginPage() {
               <Input id="email" name="email" type="email" required autoComplete="email" placeholder="admin@dermabichos.com" className="h-12" />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-base font-semibold">Senha</Label>
+              <div className="flex items-baseline justify-between">
+                <Label htmlFor="password" className="text-base font-semibold">Senha</Label>
+                <Link href="/admin/esqueci-senha" className="text-sm font-semibold text-muted-foreground underline hover:text-foreground">
+                  Esqueci minha senha
+                </Link>
+              </div>
               <Input id="password" name="password" type="password" required autoComplete="current-password" className="h-12" />
             </div>
             {error && (

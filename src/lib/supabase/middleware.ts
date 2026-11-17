@@ -27,6 +27,7 @@ export async function updateSession(request: NextRequest) {
   // /admin/print é compartilhado com o tablet; a página valida a sessão por conta própria.
   const isAdminRoute = pathname.startsWith('/admin') && !pathname.startsWith('/admin/print')
   const isLoginRoute = pathname === '/admin/login'
+  const isPublicAdminRoute = isLoginRoute || pathname === '/admin/esqueci-senha'
 
   const redirectTo = (path: string) => {
     const url = request.nextUrl.clone()
@@ -38,7 +39,7 @@ export async function updateSession(request: NextRequest) {
     return response
   }
 
-  if (!user && isAdminRoute && !isLoginRoute) {
+  if (!user && isAdminRoute && !isPublicAdminRoute) {
     return redirectTo('/admin/login')
   }
 
