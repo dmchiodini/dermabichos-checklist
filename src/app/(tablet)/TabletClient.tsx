@@ -26,7 +26,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 
 const dogBreeds = [
   "SRD (Sem Raça Definida)", "Afghan Hound", "Akita", "American Bully", "Basset Hound",
-  "Beagle", "Bernese Mountain Dog", "Bichon Frisé", "Bichon Havanês", "Boiadeiro Australiano (Heeler)",
+  "Beagle", "Bernese Mountain Dog", "Bichon Frisé", "Bichon Havanês", "Biewer Terrier", "Boiadeiro Australiano (Heeler)",
   "Border Collie", "Boston Terrier", "Boxer", "Buldogue Francês", "Buldogue Inglês",
   "Bull Terrier", "Cane Corso", "Cavalier King Charles Spaniel", "Chihuahua", "Chow Chow",
   "Cocker Spaniel", "Collie", "Corgi", "Dachshund (Salsicha)", "Dálmata", "Doberman",
