@@ -146,13 +146,88 @@
     @apply font-heading;
     text-wrap: balance;
   }
-  button, 
-  [type='button'], 
+  button,
+  [type='button'],
   [type='reset'], 
   [type='submit'], 
   [role='button'], 
   [role='combobox'],
   [role='checkbox'] {
     cursor: pointer !important;
+  }
+}
+/* Telas de acesso: painel em forma de lente, com aro no rosa da marca (como a lupa do logo) */
+@layer components {
+  .auth-lens-rim {
+    clip-path: ellipse(135% 100% at 50% 0%);
+  }
+  .auth-lens {
+    clip-path: ellipse(135% calc(100% - 7px) at 50% 0%);
+  }
+  @media (width >= 64rem) {
+    .auth-lens-rim {
+      clip-path: ellipse(100% 85% at 0% 50%);
+    }
+    .auth-lens {
+      clip-path: ellipse(calc(100% - 9px) calc(85% - 6px) at 0% 50%);
+    }
+  }
+
+  .lens-ring {
+    position: absolute;
+    inset: 0;
+    margin: auto;
+    border-radius: 9999px;
+    border-width: 2px;
+    animation: lens-ripple 1.2s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  }
+}
+
+@keyframes lens-ripple {
+  from {
+    opacity: 0;
+    transform: scale(0.55);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Selo de check do logo: entra depois dos anéis e o traço se desenha */
+.check-badge {
+  animation: check-pop 0.45s cubic-bezier(0.3, 1.5, 0.5, 1) 0.75s both;
+}
+.check-mark {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: check-draw 0.35s ease-out 1.05s forwards;
+}
+
+@keyframes check-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes check-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lens-ring,
+  .check-badge {
+    animation: none;
+  }
+  .check-mark {
+    animation: none;
+    stroke-dashoffset: 0;
   }
 }

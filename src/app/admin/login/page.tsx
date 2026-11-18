@@ -1,12 +1,13 @@
 'use client'
 
 import React, { useState } from 'react'
+import Link from 'next/link'
 import { login } from '@/app/actions/auth'
+import AuthShell, { AuthAlert, authLinkClass, authSubmitClass } from '@/components/auth-shell'
+import { PasswordInput } from '@/components/password-input'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
-import Image from 'next/image'
-import Link from 'next/link'
 
 export default function LoginPage() {
   const [error, setError] = useState<string | null>(null)
@@ -28,58 +29,49 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="grid min-h-screen bg-espuma md:grid-cols-[1.1fr_1fr]">
-      <div className="relative hidden flex-col justify-between overflow-hidden bg-ceu p-12 text-primary-foreground md:flex">
-        <span aria-hidden className="absolute -right-28 -bottom-28 size-96 rounded-full bg-rosa" />
-        <Image
-          src="/dermabichos-icon.svg"
-          alt="Dermabichos"
-          width={120}
-          height={120}
-          className="relative size-30"
-          priority
-        />
-        <p className="relative max-w-sm font-heading text-4xl leading-[1.1] font-bold tracking-tight">
-          Cada banho registrado, cada responsável tranquilo.
-        </p>
-      </div>
-
-      <div className="flex flex-col items-center justify-center px-5 py-12">
-        <div className="w-full max-w-sm">
-          <Image
-            src="/dermabichos-icon.svg"
-            alt="Dermabichos"
-            width={88}
-            height={88}
-            className="mb-8 size-22 rounded-full ring-4 ring-accent md:hidden"
-            priority
+    <AuthShell
+      title="Painel administrativo"
+      subtitle="Entre com o e-mail e a senha do administrador."
+      tagline="Cada banho registrado, cada responsável tranquilo."
+      footer={
+        <>
+          Trabalha na recepção ou no banho? <Link href="/login" className={authLinkClass}>Acesso da equipe</Link>
+        </>
+      }
+    >
+      <form onSubmit={handleSubmit} className="mt-10 space-y-5">
+        <div className="space-y-2">
+          <Label htmlFor="email" className="text-base font-semibold">E-mail</Label>
+          <Input
+            id="email"
+            name="email"
+            type="email"
+            required
+            autoComplete="email"
+            placeholder="admin@dermabichos.com"
+            aria-invalid={error ? true : undefined}
           />
-          <h1 className="text-3xl font-extrabold tracking-tight">Painel administrativo</h1>
-          <p className="mt-2 text-muted-foreground">Entre com o e-mail e a senha da equipe.</p>
-
-          <form onSubmit={handleSubmit} className="mt-10 space-y-5">
-            <div className="space-y-2">
-              <Label htmlFor="email" className="text-base font-semibold">E-mail</Label>
-              <Input id="email" name="email" type="email" required autoComplete="email" placeholder="admin@dermabichos.com" className="h-12" />
-            </div>
-            <div className="space-y-2">
-              <div className="flex items-baseline justify-between">
-                <Label htmlFor="password" className="text-base font-semibold">Senha</Label>
-                <Link href="/admin/esqueci-senha" className="text-sm font-semibold text-muted-foreground underline hover:text-foreground">
-                  Esqueci minha senha
-                </Link>
-              </div>
-              <Input id="password" name="password" type="password" required autoComplete="current-password" className="h-12" />
-            </div>
-            {error && (
-              <p role="alert" className="rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm font-medium text-destructive">{error}</p>
-            )}
-            <Button type="submit" className="mt-3 h-12 w-full rounded-xl text-base" disabled={isPending}>
-              {isPending ? 'Entrando...' : 'Entrar'}
-            </Button>
-          </form>
         </div>
-      </div>
-    </main>
+        <div className="space-y-2">
+          <div className="flex items-baseline justify-between gap-3">
+            <Label htmlFor="password" className="text-base font-semibold">Senha</Label>
+            <Link href="/admin/esqueci-senha" className={`text-sm ${authLinkClass}`}>
+              Esqueci minha senha
+            </Link>
+          </div>
+          <PasswordInput
+            id="password"
+            name="password"
+            required
+            autoComplete="current-password"
+            aria-invalid={error ? true : undefined}
+          />
+        </div>
+        {error && <AuthAlert>{error}</AuthAlert>}
+        <Button type="submit" className={authSubmitClass} disabled={isPending}>
+          {isPending ? 'Entrando...' : 'Entrar'}
+        </Button>
+      </form>
+    </AuthShell>
   )
 }
