@@ -5,7 +5,18 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { getDashboardStats, DashboardStats } from '@/app/actions/dashboard'
-import { subDays, startOfMonth, startOfYear, endOfMonth, endOfYear } from 'date-fns'
+import { format, subDays, startOfMonth, startOfYear, endOfMonth, endOfYear } from 'date-fns'
+
+// Cores da identidade (mesmos valores de globals.css)
+const BRAND = {
+  ceu: '#79b7de',
+  ceuDeep: '#2b6a92',
+  rosa: '#cd8da7',
+  tinta: '#1b3244',
+  muted: '#5b7286',
+  border: '#dbe7f0',
+}
+const tooltipStyle = { borderRadius: '12px', border: `1px solid ${BRAND.border}`, boxShadow: '0 8px 24px -12px rgb(27 50 68 / 0.25)' }
 import { BarChart3, Bath, ClipboardCheck, Dog } from 'lucide-react'
 
 export default function DashboardOverview() {
@@ -33,9 +44,10 @@ export default function DashboardOverview() {
       }
 
       try {
+        // Data local (toISOString usaria UTC e viraria o dia após as 21h no Brasil)
         const statsData = await getDashboardStats(
-          startDate.toISOString().split('T')[0],
-          endDate.toISOString().split('T')[0]
+          format(startDate, 'yyyy-MM-dd'),
+          format(endDate, 'yyyy-MM-dd')
         )
         setStats(statsData)
       } catch (error) {
@@ -136,14 +148,14 @@ export default function DashboardOverview() {
         <CardContent className="h-[320px]">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={stats?.volumeDiario} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
-              <XAxis dataKey="dia" axisLine={false} tickLine={false} tick={{fill: '#6b7280', fontSize: 12}} dy={10} />
-              <YAxis axisLine={false} tickLine={false} tick={{fill: '#6b7280', fontSize: 12}} allowDecimals={false} />
-              <Tooltip 
-                cursor={{ fill: 'rgba(0, 0, 0, 0.04)' }}
-                contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}}
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={BRAND.border} />
+              <XAxis dataKey="dia" axisLine={false} tickLine={false} tick={{fill: BRAND.muted, fontSize: 12}} dy={10} />
+              <YAxis axisLine={false} tickLine={false} tick={{fill: BRAND.muted, fontSize: 12}} allowDecimals={false} />
+              <Tooltip
+                cursor={{ fill: 'rgb(121 183 222 / 0.12)' }}
+                contentStyle={tooltipStyle}
               />
-              <Bar dataKey="total" name="Banhos" fill="#1f77b4" radius={[4, 4, 0, 0]} maxBarSize={40} />
+              <Bar dataKey="total" name="Banhos" fill={BRAND.ceuDeep} radius={[6, 6, 0, 0]} maxBarSize={40} />
             </BarChart>
           </ResponsiveContainer>
         </CardContent>
@@ -160,14 +172,14 @@ export default function DashboardOverview() {
             {stats && stats.porFuncionario.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={stats.porFuncionario} layout="vertical" margin={{top: 5, right: 30, left: 20, bottom: 5}}>
-                  <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#e5e7eb" />
-                  <XAxis type="number" axisLine={false} tickLine={false} tick={{fill: '#6b7280'}} />
-                  <YAxis dataKey="nome" type="category" axisLine={false} tickLine={false} tick={{fill: '#1b3244', fontWeight: 600}} width={120} />
-                  <Tooltip 
-                    cursor={{fill: '#f3f4f6'}}
-                    contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}}
+                  <CartesianGrid strokeDasharray="3 3" vertical={true} horizontal={false} stroke={BRAND.border} />
+                  <XAxis type="number" axisLine={false} tickLine={false} tick={{fill: BRAND.muted}} allowDecimals={false} />
+                  <YAxis dataKey="nome" type="category" axisLine={false} tickLine={false} tick={{fill: BRAND.tinta, fontWeight: 600}} width={120} />
+                  <Tooltip
+                    cursor={{ fill: 'rgb(205 141 167 / 0.12)' }}
+                    contentStyle={tooltipStyle}
                   />
-                  <Bar dataKey="finalizados" name="Finalizados" fill="#e6789e" radius={[0, 4, 4, 0]} barSize={32} />
+                  <Bar dataKey="finalizados" name="Finalizados" fill={BRAND.rosa} radius={[0, 6, 6, 0]} barSize={32} />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
@@ -199,7 +211,7 @@ export default function DashboardOverview() {
                         <Cell fill="#16a34a" /> {/* Green */}
                         <Cell fill="#f59e0b" /> {/* Amber */}
                       </Pie>
-                      <Tooltip contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}} />
+                      <Tooltip contentStyle={tooltipStyle} />
                     </PieChart>
                   </ResponsiveContainer>
                 </div>

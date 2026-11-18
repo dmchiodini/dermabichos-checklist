@@ -4,12 +4,13 @@ import React, { useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Plus, Clock, Play, CheckCircle2, ChevronRight, ShowerHead, Share2, Search, Calendar, RefreshCw, Trash2 } from 'lucide-react'
+import { Plus, Clock, Play, CheckCircle2, ChevronRight, ShowerHead, Share2, Search, RefreshCw, Trash2 } from 'lucide-react'
 import { CiMedicalCross } from 'react-icons/ci'
 import { toast } from 'react-toastify'
 import { updateChecklistStatus, getFilteredChecklists, softDeleteChecklist } from '@/app/actions/checklist'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { DatePicker } from '@/components/date-picker'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -121,22 +122,23 @@ export default function FilaClient({ initialChecklists, user }: { initialCheckli
             )}
             <div>
               <h1 className="text-2xl font-extrabold leading-tight tracking-tight md:text-[2rem]">
-                Fila de Atendimento
+                Fila de atendimento
               </h1>
               <div className="mt-1 flex items-center gap-3">
                 <span className="bg-ceu/10 text-ceu-deep px-2 py-0.5 rounded-full text-xs font-bold border border-ceu/20">{user.nome} ({user.cargo})</span>
-                <button onClick={() => logoutFuncionario()} className="text-sm text-muted-foreground underline hover:text-foreground transition-colors">Sair da conta</button>
+                <button type="button" onClick={() => logoutFuncionario()} className="text-sm text-muted-foreground underline hover:text-foreground transition-colors">Sair da conta</button>
               </div>
             </div>
           </div>
 
           <div className="flex flex-col md:items-end gap-3 w-full md:w-auto">
             {isRecepcao && (
-              <Link href="/checklist">
-                <Button className="h-12 md:h-14 w-full md:w-auto rounded-2xl text-base md:text-lg font-bold shadow-[0_4px_0_-1px_var(--ceu-deep)] hover:bg-ceu/90 px-6 gap-2">
-                  <Plus className="size-5" />
-                  Novo Checklist
-                </Button>
+              <Link
+                href="/checklist"
+                className={cn(buttonVariants(), "h-12 md:h-14 w-full md:w-auto rounded-2xl text-base md:text-lg font-bold shadow-[0_4px_0_-1px_var(--ceu-deep)] hover:bg-ceu/90 px-6 gap-2")}
+              >
+                <Plus className="size-5" aria-hidden />
+                Novo checklist
               </Link>
             )}
           </div>
@@ -156,15 +158,12 @@ export default function FilaClient({ initialChecklists, user }: { initialCheckli
           </div>
 
           <div className="flex w-full md:w-auto gap-3 shrink-0">
-            <div className="relative flex-1 md:w-48">
-              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-              <Input
-                type="date"
-                className="pl-9 h-12 bg-white rounded-xl"
-                value={filterDate}
-                onChange={(e) => setFilterDate(e.target.value)}
-              />
-            </div>
+            <DatePicker
+              aria-label="Data da fila"
+              value={filterDate}
+              onChange={setFilterDate}
+              className="flex-1 md:w-48"
+            />
             <Button
               variant="outline"
               onClick={() => {
@@ -180,12 +179,12 @@ export default function FilaClient({ initialChecklists, user }: { initialCheckli
 
           <div className="flex items-center gap-4 bg-white px-5 h-12 rounded-xl border shadow-sm w-full md:w-auto md:ml-auto justify-center">
             <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Banhos:</span>
+              <span className="text-sm font-semibold text-muted-foreground">Banhos</span>
               <span className="text-lg font-black text-ceu-deep">{checklists.length}</span>
             </div>
             <div className="w-px h-5 bg-border"></div>
             <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Finalizados:</span>
+              <span className="text-sm font-semibold text-muted-foreground">Finalizados</span>
               <span className="text-lg font-black text-green-600">{checklists.filter(c => c.status === 'Finalizado').length}</span>
             </div>
           </div>
@@ -197,8 +196,9 @@ export default function FilaClient({ initialChecklists, user }: { initialCheckli
             const getOrder = (status: string) => {
               if (status === 'Aguardando') return 1;
               if (status === 'Em banho') return 2;
-              if (status === 'Finalizado') return 3;
-              return 4;
+              if (status === 'Banho finalizado') return 3;
+              if (status === 'Finalizado') return 4;
+              return 5;
             };
             const orderDiff = getOrder(a.status || '') - getOrder(b.status || '');
             if (orderDiff !== 0) return orderDiff;
@@ -230,7 +230,7 @@ export default function FilaClient({ initialChecklists, user }: { initialCheckli
                             setChecklistToDelete(checklist)
                             setMotivoExclusao('')
                           }}
-                          className="p-1 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                          className="-mr-2 grid size-10 place-items-center rounded-xl text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
                           title="Excluir checklist da fila"
                           aria-label={`Excluir checklist de ${checklist.pet_nome}`}
                         >
@@ -262,16 +262,16 @@ export default function FilaClient({ initialChecklists, user }: { initialCheckli
                   )}
                 </div>
 
-                <div className="border-t border-border bg-accent/30 p-3 flex items-center justify-between gap-2">
+                <div className="border-t border-border bg-accent/30 p-3 flex flex-wrap items-center justify-between gap-2">
                   <div className="flex gap-2">
                     {checklist.status !== 'Finalizado' && checklist.status !== 'Em banho' && checklist.status !== 'Banho finalizado' && (
                       <Button
                         size="sm"
                         variant="outline"
                         onClick={() => handleStatusChange(checklist.id, 'Em banho')}
-                        className="text-ceu-deep border-ceu/30 hover:bg-ceu/10"
+                        className="h-10 rounded-xl px-3 text-sm text-ceu-deep border-ceu/30 hover:bg-ceu/10"
                       >
-                        <Play className="size-4 mr-1" /> Iniciar Banho
+                        <Play className="size-4" aria-hidden /> Iniciar banho
                       </Button>
                     )}
                     {checklist.status === 'Em banho' && (
@@ -279,9 +279,9 @@ export default function FilaClient({ initialChecklists, user }: { initialCheckli
                         size="sm"
                         variant="outline"
                         onClick={() => handleStatusChange(checklist.id, 'Banho finalizado')}
-                        className="text-green-700 border-green-300 hover:bg-green-100"
+                        className="h-10 rounded-xl px-3 text-sm text-green-700 border-green-300 hover:bg-green-100"
                       >
-                        <CheckCircle2 className="size-4 mr-1" /> Banho Concluído
+                        <CheckCircle2 className="size-4" aria-hidden /> Banho concluído
                       </Button>
                     )}
                     {checklist.status === 'Banho finalizado' && isRecepcao && (
@@ -289,28 +289,30 @@ export default function FilaClient({ initialChecklists, user }: { initialCheckli
                         size="sm"
                         variant="outline"
                         onClick={() => handleStatusChange(checklist.id, 'Finalizado')}
-                        className="text-green-700 border-green-300 hover:bg-green-100 font-semibold"
+                        className="h-10 rounded-xl px-3 text-sm text-green-700 border-green-300 hover:bg-green-100 font-semibold"
                         title="Finalizar atendimento diretamente"
                       >
-                        <CheckCircle2 className="size-4 mr-1" /> Concluir
+                        <CheckCircle2 className="size-4" aria-hidden /> Concluir
                       </Button>
                     )}
                   </div>
 
-                  <div className="flex flex-1 items-center gap-2">
+                  <div className="flex min-w-40 flex-1 items-center gap-2">
                     {checklist.status === 'Finalizado' ? (
-                      <Link href={`/checklist?edit=${checklist.id}`} className="flex-1 flex">
-                        <Button size="sm" variant="outline" className="w-full border-green-200 text-green-700 bg-green-50 hover:bg-green-100 gap-1 font-semibold">
-                          <CheckCircle2 className="size-4" />
-                          Ver Concluído
-                        </Button>
+                      <Link
+                        href={`/checklist?edit=${checklist.id}`}
+                        className={cn(buttonVariants({ size: 'sm', variant: 'outline' }), "h-10 rounded-xl px-3 text-sm flex-1 border-green-200 text-green-700 bg-green-50 hover:bg-green-100 hover:text-green-800 gap-1 font-semibold")}
+                      >
+                        <CheckCircle2 className="size-4" aria-hidden />
+                        Ver concluído
                       </Link>
                     ) : (
-                      <Link href={`/checklist?edit=${checklist.id}`} className="flex-1 flex">
-                        <Button size="sm" className="w-full bg-rosa text-white hover:bg-rosa/90 gap-1">
-                          {isRecepcao ? 'Editar / Finalizar' : 'Visualizar'}
-                          <ChevronRight className="size-4" />
-                        </Button>
+                      <Link
+                        href={`/checklist?edit=${checklist.id}`}
+                        className={cn(buttonVariants({ size: 'sm' }), "h-10 rounded-xl px-3 text-sm flex-1 bg-rosa text-foreground hover:bg-rosa/85 gap-1")}
+                      >
+                        {isRecepcao ? 'Editar / Finalizar' : 'Visualizar'}
+                        <ChevronRight className="size-4" aria-hidden />
                       </Link>
                     )}
 
@@ -319,8 +321,9 @@ export default function FilaClient({ initialChecklists, user }: { initialCheckli
                         size="sm"
                         variant="outline"
                         onClick={() => handleShare(checklist)}
-                        className="px-2 text-muted-foreground hover:text-foreground border-border shrink-0"
+                        className="size-10 rounded-xl p-0 text-muted-foreground hover:text-foreground border-border shrink-0"
                         title="Compartilhar"
+                        aria-label={`Compartilhar ficha de ${checklist.pet_nome}`}
                       >
                         <Share2 className="size-4" />
                       </Button>
@@ -337,7 +340,7 @@ export default function FilaClient({ initialChecklists, user }: { initialCheckli
               <h3 className="text-xl font-bold text-foreground">Fila vazia</h3>
               <p className="text-muted-foreground mt-2 max-w-sm">
                 Nenhum pet aguardando banho no momento.
-                {isRecepcao && ' Clique em "Novo Checklist" para iniciar.'}
+                {isRecepcao && ' Toque em "Novo checklist" para iniciar.'}
               </p>
             </div>
           )}

@@ -4,12 +4,13 @@ import React, { useRef, useState } from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { DatePicker } from '@/components/date-picker'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { addFuncionario, toggleFuncionario, deleteFuncionario, updateFuncionario, addTipoHidratacao, toggleTipoHidratacao, updateTipoHidratacao, deleteTipoHidratacao, deleteChecklist } from '@/app/actions/admin'
 import { toast } from 'react-toastify'
-import { Printer, Eye, Trash2, ClipboardList, Users, Droplets, Dog, Cat, Check, Minus, Search, Calendar, Edit2, User, Camera, PieChart, Filter, RotateCcw } from 'lucide-react'
+import { Printer, Eye, Trash2, ClipboardList, Users, Droplets, Dog, Cat, Check, Minus, Search, Edit2, User, Camera, PieChart, Filter, RotateCcw } from 'lucide-react'
 import { CiMedicalCross } from 'react-icons/ci'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { todayLocalISODate } from '@/lib/dates'
@@ -171,13 +172,14 @@ export default function DashboardClient({
 
         {/* Painel de Filtros: Status, Período de Duas Datas e Busca */}
         <div className="rounded-2xl border border-border bg-white p-4 sm:p-5 shadow-sm space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 items-end">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 items-start">
             {/* Campo de Busca */}
             <div className="space-y-1.5">
-              <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Buscar</Label>
+              <Label htmlFor="filtro-busca" className="text-sm font-semibold text-muted-foreground">Buscar</Label>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
                 <Input
+                  id="filtro-busca"
                   placeholder="Pet ou responsável..."
                   className="h-11 sm:h-12 pl-9 bg-muted/20 text-sm"
                   value={filterSearch}
@@ -189,10 +191,12 @@ export default function DashboardClient({
 
             {/* Filtro por Status */}
             <div className="space-y-1.5">
-              <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Status</Label>
+              <Label htmlFor="filtro-status" className="text-sm font-semibold text-muted-foreground">Status</Label>
               <Select value={filterStatus} onValueChange={(val) => setFilterStatus(val || 'todos')}>
-                <SelectTrigger className="h-11 sm:h-12 data-[size=default]:h-11 sm:data-[size=default]:h-12 w-full bg-muted/20 text-sm">
-                  <SelectValue placeholder="Todos os status" />
+                <SelectTrigger id="filtro-status" className="h-11 sm:h-12 data-[size=default]:h-11 sm:data-[size=default]:h-12 w-full bg-muted/20 text-sm">
+                  <SelectValue placeholder="Todos os status">
+                    {filterStatus === 'todos' ? 'Todos os status' : filterStatus === 'Excluido' ? 'Excluído' : filterStatus}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="todos">Todos os status</SelectItem>
@@ -207,32 +211,14 @@ export default function DashboardClient({
 
             {/* Período: Data Início */}
             <div className="space-y-1.5">
-              <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Data início</Label>
-              <div className="relative">
-                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
-                <Input
-                  type="date"
-                  className="h-11 sm:h-12 pl-9 bg-muted/20 text-sm"
-                  value={filterStartDate}
-                  onChange={(e) => setFilterStartDate(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && applyFilters()}
-                />
-              </div>
+              <Label htmlFor="filtro-inicio" className="text-sm font-semibold text-muted-foreground">Data início</Label>
+              <DatePicker id="filtro-inicio" value={filterStartDate} onChange={setFilterStartDate} className="h-11 sm:h-12 bg-muted/20 text-sm" />
             </div>
 
             {/* Período: Data Fim */}
             <div className="space-y-1.5">
-              <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Data fim</Label>
-              <div className="relative">
-                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
-                <Input
-                  type="date"
-                  className="h-11 sm:h-12 pl-9 bg-muted/20 text-sm"
-                  value={filterEndDate}
-                  onChange={(e) => setFilterEndDate(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && applyFilters()}
-                />
-              </div>
+              <Label htmlFor="filtro-fim" className="text-sm font-semibold text-muted-foreground">Data fim</Label>
+              <DatePicker id="filtro-fim" value={filterEndDate} onChange={setFilterEndDate} className="h-11 sm:h-12 bg-muted/20 text-sm" />
             </div>
           </div>
 
@@ -309,7 +295,7 @@ export default function DashboardClient({
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 mb-1">
                         <p className="truncate font-heading text-lg leading-tight font-bold">{item.pet_nome}</p>
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${config.bg} ${config.color} ${config.border}`}>
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border ${config.bg} ${config.color} ${config.border}`}>
                           {status === 'Excluido' ? 'Excluído' : status}
                         </span>
                       </div>
@@ -356,14 +342,22 @@ export default function DashboardClient({
             funcFormRef.current?.reset()
             router.refresh()
           }
-        }} className={`${addForm} flex-col`}>
-          <div className="flex flex-col sm:flex-row gap-3 w-full">
-            <Input name="nome" aria-label="Nome do funcionário" placeholder="Nome do funcionário" required className="h-14 w-full sm:flex-1" />
-            <Input name="cargo" aria-label="Cargo" placeholder="Cargo (Ex: Banhista, Tosador)" required className="h-14 w-full sm:flex-1" />
-            <div className="flex-1">
+        }} className="flex flex-col gap-4 rounded-2xl border border-border bg-white p-4 sm:p-5">
+          <p className="font-heading text-lg font-semibold">Novo funcionário</p>
+          <div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="novo-nome" className="text-sm font-semibold text-muted-foreground">Nome</Label>
+              <Input id="novo-nome" name="nome" placeholder="Ex: Juliana Souza" required className="h-12" />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="novo-cargo" className="text-sm font-semibold text-muted-foreground">Cargo</Label>
+              <Input id="novo-cargo" name="cargo" placeholder="Ex: Banhista, Tosador" required className="h-12" />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="novo-role" className="text-sm font-semibold text-muted-foreground">Nível de acesso</Label>
               <Select name="role" required>
-                <SelectTrigger className="h-14 data-[size=default]:h-14 w-full text-base bg-white" aria-label="Nível de Acesso">
-                  <SelectValue placeholder="Nível de Acesso" />
+                <SelectTrigger id="novo-role" className="h-12 data-[size=default]:h-12 w-full text-base bg-white">
+                  <SelectValue placeholder="Selecione" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="Recepção">Recepção</SelectItem>
@@ -371,11 +365,17 @@ export default function DashboardClient({
                 </SelectContent>
               </Select>
             </div>
-          </div>
-          <div className="flex flex-col sm:flex-row gap-3 w-full">
-            <Input name="login" aria-label="Login (Usuário)" placeholder="Nome de usuário para login" required className="h-14 w-full sm:flex-1" />
-            <Input type="password" name="senha" aria-label="Senha" placeholder="Senha" required className="h-14 w-full sm:flex-1" />
-            <Button type="submit" className="h-14 rounded-xl px-6 text-base sm:w-auto w-full">Cadastrar</Button>
+            <div className="space-y-1.5">
+              <Label htmlFor="novo-login" className="text-sm font-semibold text-muted-foreground">Usuário de login</Label>
+              <Input id="novo-login" name="login" placeholder="Ex: juliana" required autoCapitalize="none" autoCorrect="off" spellCheck={false} className="h-12" />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="novo-senha" className="text-sm font-semibold text-muted-foreground">Senha</Label>
+              <Input id="novo-senha" type="password" name="senha" required autoComplete="new-password" className="h-12" />
+            </div>
+            <div className="flex items-end">
+              <Button type="submit" className="h-12 w-full rounded-xl px-6 text-base">Cadastrar funcionário</Button>
+            </div>
           </div>
         </form>
 
