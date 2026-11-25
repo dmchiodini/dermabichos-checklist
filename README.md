@@ -1,3 +1,10 @@
+> [!IMPORTANT]
+> **Propriedade Intelectual & Código Proprietário:**
+> Este repositório é disponibilizado publicamente para fins de demonstração técnica e portfólio.
+> **Todos os direitos são reservados.** É estritamente proibida a cópia, clonagem para fins comerciais ou redistribuição deste código sem autorização expressa do autor.
+
+---
+
 # Dermabichos Check
 
 Sistema de checklist de banho e tosa: tablet da recepção/equipe + painel administrativo.
